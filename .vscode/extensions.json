@@ -1,0 +1,8 @@
+{
+    "recommendations": [
+        "ms-vscode.cpptools",
+        "editorconfig.editorconfig",
+        "tdennis4496.cmantic",
+        "aaron-bond.better-comments"
+    ]
+}

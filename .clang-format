@@ -1,0 +1,158 @@
+BasedOnStyle: Google
+AccessModifierOffset: -2
+AlignAfterOpenBracket: Align
+# AlignArrayOfStructures: Right # Buggy on some cases
+AlignConsecutiveAssignments: Consecutive # cannot put custom fields ?
+AlignConsecutiveBitFields: Consecutive # cannot put custom fields ?
+AlignConsecutiveDeclarations: AcrossComments # cannot put custom fields ?
+AlignConsecutiveMacros: Consecutive # cannot put custom fields ?
+AlignEscapedNewlines: Left
+AlignOperands: Align
+AlignTrailingComments: true
+AllowAllArgumentsOnNextLine: true
+AllowAllParametersOfDeclarationOnNextLine: true
+AllowShortBlocksOnASingleLine: Empty
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortEnumsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLambdasOnASingleLine: All
+AllowShortLoopsOnASingleLine: false
+AlwaysBreakAfterReturnType: None
+AlwaysBreakBeforeMultilineStrings: true
+AlwaysBreakTemplateDeclarations: Yes
+BinPackArguments: true
+BinPackParameters: true
+BitFieldColonSpacing: After
+BraceWrapping:
+  AfterCaseLabel:	true
+  AfterClass:	true
+  AfterControlStatement: Always
+  AfterEnum: true
+  AfterFunction: true
+  AfterNamespace: true
+  AfterObjCDeclaration: true
+  AfterStruct: true
+  AfterUnion: true
+  AfterExternBlock: true
+  BeforeCatch: true
+  BeforeElse: true
+  BeforeLambdaBody: false
+  BeforeWhile: false
+  IndentBraces: false
+  SplitEmptyFunction: false
+  SplitEmptyRecord: false
+  SplitEmptyNamespace: false
+BreakBeforeBinaryOperators: NonAssignment
+BreakBeforeBraces: Custom
+BreakBeforeConceptDeclarations: Allowed # Doesn't work
+BreakBeforeTernaryOperators: true
+BreakConstructorInitializers: BeforeColon
+BreakInheritanceList: AfterComma
+BreakStringLiterals: true
+ColumnLimit: 80
+CompactNamespaces: false
+ConstructorInitializerIndentWidth: 2
+ContinuationIndentWidth: 4
+Cpp11BracedListStyle: true
+DeriveLineEnding: false
+DerivePointerAlignment: false
+DisableFormat: false
+EmptyLineAfterAccessModifier: Never
+EmptyLineBeforeAccessModifier: Always
+FixNamespaceComments: true
+# ForEachMacros: ['RANGES_FOR', 'FOREACH']
+# IfMacros: ['IF']
+IncludeBlocks: Regroup
+IncludeCategories:
+# Note : don't change the order
+# Libraries
+  - Regex:           '<.*\/.*>'
+    Priority:        3
+# STD includes
+  - Regex:           '<.*>'
+    Priority:        2
+# Project Files
+  - Regex:           '".*\/.*"'
+    Priority:        4
+# Header
+  - Regex:           '".*"'
+    Priority:        1
+IndentAccessModifiers: false
+IndentCaseBlocks: true
+IndentCaseLabels: false
+# IndentExternBlockStyle: AfterExternBlock # Doesn't work
+IndentGotoLabels: false
+IndentPPDirectives: AfterHash
+IndentRequires: true
+IndentRequiresClause: true # clang 15
+IndentWidth: 4
+IndentWrappedFunctionNames: true
+InsertBraces: true # clang 15
+InsertTrailingCommas: None # Cannot use that if BinPackArguments is set to true
+JavaScriptQuotes: Single
+JavaScriptWrapImports: false
+KeepEmptyLinesAtTheStartOfBlocks: false
+LambdaBodyIndentation: Signature
+Language: Cpp
+MaxEmptyLinesToKeep: 1
+NamespaceIndentation: All
+# NamespaceMacros:
+PPIndentWidth: 4
+PackConstructorInitializers: NextLine # clang 14
+# PenaltyBreakAssignment: 90
+# PenaltyBreakBeforeFirstCallParameter: 90
+# PenaltyBreakComment: 40
+# PenaltyBreakFirstLessLess: -10
+# PenaltyBreakString: 90
+# PenaltyBreakTemplateDeclaration: 200
+# PenaltyIndentedWhitespace: 150
+# PenaltyReturnTypeOnItsOwnLine: 150
+PointerAlignment: Middle
+# QualifierAlignment: Custom
+# QualifierOrder: ['inline', 'constexpr', 'static', 'type', 'const' ] # Still buggy ex : 'std::vector< Type > const Array2D< Type >::operator[] (unsigned int line ) const'
+ReferenceAlignment: Middle
+ReflowComments: true
+# RemoveBracesLLVM: false # Useless
+RequiresClausePosition: WithPreceding # clang 15
+SeparateDefinitionBlocks: Always
+ShortNamespaceLines: 0
+SortIncludes: CaseSensitive
+SortJavaStaticImport: Before
+SortUsingDeclarations: true
+SpaceAfterCStyleCast: false
+SpaceAfterLogicalNot: true
+SpaceAfterTemplateKeyword: false
+SpaceAroundPointerQualifiers: Default
+SpaceBeforeAssignmentOperators: true
+SpaceBeforeCaseColon: true
+SpaceBeforeCpp11BracedList: true
+SpaceBeforeCtorInitializerColon: true
+SpaceBeforeInheritanceColon: true
+SpaceBeforeParens: Custom
+SpaceBeforeParensOptions:
+  AfterControlStatements: true
+  AfterFunctionDeclarationName: true
+  AfterFunctionDefinitionName: true
+  AfterIfMacros: true
+  AfterOverloadedOperator: true
+  AfterRequiresInClause: true # clang 15
+  AfterRequiresInExpression: true # clang 15
+  BeforeNonEmptyParentheses: false
+SpaceBeforeRangeBasedForLoopColon: true
+SpaceBeforeSquareBrackets: false
+SpaceInEmptyBlock: false
+SpaceInEmptyParentheses: false
+SpacesBeforeTrailingComments: 2
+SpacesInAngles: Always # clang 13
+SpacesInCStyleCastParentheses: true
+SpacesInConditionalStatement: true
+SpacesInContainerLiterals: true
+SpacesInLineCommentPrefix:
+  Minimum: 1
+  Maximum: 1
+SpacesInParentheses: true
+SpacesInSquareBrackets: false
+Standard: c++20
+UseCRLF: true
+UseTab: Never
