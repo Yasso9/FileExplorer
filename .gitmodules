@@ -1,0 +1,6 @@
+[submodule "submodules/SDL"]
+	path = submodules/SDL
+	url = https://github.com/libsdl-org/SDL.git
+[submodule "submodules/imgui"]
+	path = submodules/imgui
+	url = https://github.com/Yasso9/imgui-sdl.git
