@@ -234,7 +234,7 @@ $(SDL_REQ) :
 ################### compile rules ###################
 
 INCLUDES:=-I"$(SRC_DIR)" -isystem"$(LIBS_INC_DIR)"
-LIBRARIES:=$(call GET_FILES,$(LIBS_OBJ_DIR),*.o) -L"$(LIBS_OBJ_DIR)" -lSDL2 -lSDL2main -lOpenGL
+LIBRARIES:=$(IMGUI_OBJ) -L"$(LIBS_OBJ_DIR)" -lSDL2 -lSDL2main -lOpenGL
 
 # set up the dependencies
 -include $(DEPS)
@@ -243,7 +243,7 @@ LIBRARIES:=$(call GET_FILES,$(LIBS_OBJ_DIR),*.o) -L"$(LIBS_OBJ_DIR)" -lSDL2 -lSD
 .SECONDEXPANSION:
 $(OBJ) : $(OBJ_DIR)/%.o : $(SRC_DIR)/$$(subst -,/,%).cpp
 	$(SHOW)echo "Compile $(subst $(SRC_DIR)/,,$<)"
-	$(SHOW)$(CXX) $(COMPILE_FLAGS) $< $(INCLUDES) -o $@
+	$(SHOW)$(CXX) $(COMPILE_FLAGS) $< -o $@ $(INCLUDES)
 
 # Create the executable by Linking all the object files and the libraries together
 $(EXEC) : $(OBJ)

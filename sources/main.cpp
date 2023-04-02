@@ -22,9 +22,9 @@ int main ()
                          SDL_GL_CONTEXT_PROFILE_CORE );
 
     // Create window
-    SDL_Window * window =
-        SDL_CreateWindow( "ImGui SDL OpenGL", 100, 100, 640, 480,
-                          SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE );
+    SDL_Window * window = SDL_CreateWindow(
+        "ImGui SDL OpenGL", 100, 100, 1200, 720,
+        SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI );
     if ( ! window )
     {
         std::cerr << "SDL_CreateWindow Error: " << SDL_GetError() << std::endl;
