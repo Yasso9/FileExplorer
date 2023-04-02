@@ -11,15 +11,23 @@ void Explorer::handle_input( SDL_Event event )
 
 void Explorer::render()
 {
-    bool showDemoWindow = true;
+    ImGuiWindowFlags fullScreenflags = ImGuiWindowFlags_NoDecoration
+                                       | ImGuiWindowFlags_NoMove
+                                       | ImGuiWindowFlags_NoBackground;
+    ImGui::SetNextWindowPos( ImGui::GetMainViewport()->Pos );
+    ImGui::SetNextWindowSize( ImGui::GetMainViewport()->Size );
+
+    static bool showDemoWindow = false;
+
+    if ( ImGui::Begin( "Hello, world!", nullptr, fullScreenflags ) )
+    {
+        ImGui::Checkbox( "Show Demo Window", &showDemoWindow );
+        ImGui::Text( "This is some text!" );
+    }
+
     if ( showDemoWindow )
     {
         ImGui::ShowDemoWindow( &showDemoWindow );
-    }
-
-    if ( ImGui::Begin( "Hello, world!" ) )
-    {
-        ImGui::Text( "This is some text!" );
     }
     ImGui::End();
 }
