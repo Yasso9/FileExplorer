@@ -74,8 +74,10 @@ namespace ds
         }
     }
 
-    void show_folder_gui ( fs::path directory )
+    fs::path show_folder_gui ( fs::path directory )
     {
+        fs::path choosenDirectory { directory };
+
         int             nbColumns = 3;
         ImGuiTableFlags flags     = ImGuiTableFlags_RowBg
                                 | ImGuiTableFlags_Resizable
@@ -84,15 +86,6 @@ namespace ds
         static bool showHidden { false };
         ImGui::Checkbox( "Show Hidden", &showHidden );
 
-        if ( ImGui::InvisibleButton( "Files", ImVec2( 20, 20 ),
-                                     ImGuiButtonFlags_MouseButtonLeft
-                                         | ImGuiButtonFlags_MouseButtonRight ) )
-        {
-            std::cout << "Button clicked" << std::endl;
-        }
-        // const bool is_hovered = ImGui::IsItemHovered();  //
-        // Hovered const bool is_active  = ImGui::IsItemActive();
-        // ImGui::InvisibleButton;
         if ( ImGui::BeginTable( "File List", nbColumns, flags ) )
         {
             ImGui::TableSetupColumn( "Name",
@@ -140,9 +133,10 @@ namespace ds
                                        selectable_flags, ImVec2( 0, 30 ) );
 
                     if ( ImGui::IsItemHovered()
-                         && ImGui::IsMouseDoubleClicked(
-                             ImGuiMouseButton_Left ) )
+                         && ImGui::IsMouseDoubleClicked( ImGuiMouseButton_Left )
+                         && entry.is_directory() )
                     {
+                        choosenDirectory = entry.path();
                         std::cout << "Double Clicked: "
                                   << entry.path().filename().string()
                                   << std::endl;
@@ -152,5 +146,7 @@ namespace ds
             }
         }
         ImGui::EndTable();
+
+        return choosenDirectory;
     }
 }  // namespace ds

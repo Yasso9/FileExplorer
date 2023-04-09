@@ -15,7 +15,8 @@ void Explorer::handle_input( SDL_Event event )
 
 void Explorer::render()
 {
-    static bool showDemoWindow = false;
+    static bool     showDemoWindow = false;
+    static fs::path currentDir { ds::get_home_directory() };
 
     ImGuiWindowFlags fullScreenflags = ImGuiWindowFlags_NoDecoration
                                        | ImGuiWindowFlags_NoMove
@@ -28,10 +29,10 @@ void Explorer::render()
     if ( ImGui::Begin( "File Explorer", nullptr, fullScreenflags ) )
     {
         ImGui::Checkbox( "Show Demo Window", &showDemoWindow );
-        fs::path baseDirectory { ds::get_home_directory() };
 
-        ds::show_folder_gui( baseDirectory );
+        currentDir = ds::show_folder_gui( currentDir );
     }
+    ImGui::End();
     ImGui::PopStyleColor();
     ImGui::PopStyleVar( 2 );
 
@@ -39,5 +40,4 @@ void Explorer::render()
     {
         ImGui::ShowDemoWindow( &showDemoWindow );
     }
-    ImGui::End();
 }
