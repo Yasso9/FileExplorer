@@ -1,15 +1,20 @@
-#include "app/application.hpp"
-#include "tools/clock.hpp"
+#include <gtkmm.h>
 
-int main ()
+class MyWindow : public Gtk::Window
 {
-    Application app;
+  public:
+    MyWindow();
+};
 
-    while ( app.should_run() )
-    {
-        app.handle_event();
-        app.render(); 
-    }
+MyWindow::MyWindow()
+{
+    set_title( "Explorer (DEV)" );
+    set_default_size( 600, 600 );
+}
 
-    return 0;
+int main ( int argc, char * argv[] )
+{
+    auto app = Gtk::Application::create( "org.gtkmm.examples.base" );
+
+    return app->make_window_and_run< MyWindow >( argc, argv );
 }
