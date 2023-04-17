@@ -198,38 +198,9 @@ format:
 
 ################### libraries rules ###################
 
-IMGUI_DIR:=$(SUBMODULES)/imgui
-IMGUI_SRC:=$(IMGUI_DIR)/imgui.cpp \
-	$(IMGUI_DIR)/imgui_demo.cpp \
-	$(IMGUI_DIR)/imgui_draw.cpp \
-	$(IMGUI_DIR)/imgui_widgets.cpp \
-	$(IMGUI_DIR)/imgui_tables.cpp \
-	$(IMGUI_DIR)/imgui_impl_sdl2.cpp \
-	$(IMGUI_DIR)/imgui_impl_opengl3.cpp
-IMGUI_OBJ:=$(patsubst %.cpp,%.o,$(IMGUI_SRC))
-IMGUI_OBJ:=$(subst $(IMGUI_DIR),$(LIBS_OBJ_DIR),$(IMGUI_OBJ))
-
-SDL_REQ:=$(LIBS_OBJ_DIR)/libSDL2.a $(LIBS_OBJ_DIR)/libSDL2main.a
 FMT_REQ:=$(LIBS_OBJ_DIR)/libfmt.a
 
-compile_libs : $(FMT_REQ) $(SDL_REQ) $(IMGUI_OBJ)
-
-$(IMGUI_OBJ) : $(LIBS_OBJ_DIR)/%.o : $(IMGUI_DIR)/%.cpp
-	$(SHOW)echo "Compile Library $@"
-	$(SHOW)$(CXX) $(COMPILE_FLAGS_LIBS) $< -o $@ -I"$(LIBS_INC_DIR)/SDL"
-
-$(SDL_REQ) :
-	$(call COMPILE_LIB, SDL \
-		,$(SUBMODULES)/SDL\
-		, -D CMAKE_C_COMPILER=$(CC) \
-		-D CMAKE_CXX_COMPILER=$(CXX) \
-		-D CMAKE_BUILD_TYPE=Release \
-		-D SDL_TEST=0 \
-		-D SDL_TESTS=0 \
-		-D SDL_STATIC=1 \
-		-D SDL_STATIC_PIC=1 \
-		, *.a \
-	)
+compile_libs : $(FMT_REQ)
 
 $(FMT_REQ) :
 	$(call COMPILE_LIB, FMT \
@@ -245,7 +216,7 @@ $(FMT_REQ) :
 ################### compile rules ###################
 
 INCLUDES:=-I"$(SRC_DIR)" -isystem"$(LIBS_INC_DIR)"
-LIBRARIES:=$(IMGUI_OBJ) -L"$(LIBS_OBJ_DIR)" -lfmt -lSDL2 -lSDL2main -lOpenGL
+LIBRARIES:=$(IMGUI_OBJ) -L"$(LIBS_OBJ_DIR)" -lfmt
 
 # set up the dependencies
 -include $(DEPS)

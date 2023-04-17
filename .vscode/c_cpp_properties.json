@@ -2,15 +2,7 @@
     "configurations": [
         {
             "name": "Linux",
-            "includePath": [
-                "${default}",
-                "${workspaceRoot}/sources/",
-                "${workspaceRoot}/submodules/include/"
-            ],
-            "cStandard": "c17",
-            "cppStandard": "c++20",
-            "compilerPath": "/usr/bin/g++",
-            "intelliSenseMode": "${default}"
+            "configurationProvider": "ms-vscode.cmake-tools"
         }
     ],
     "version": 4

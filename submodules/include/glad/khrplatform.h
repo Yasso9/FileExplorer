@@ -1,0 +1,1 @@
+../../glad/khrplatform.h

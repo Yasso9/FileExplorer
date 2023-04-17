@@ -1,7 +1,9 @@
 #include "window.hpp"
 
+#include <iostream>
+
 #include <SDL/SDL.h>
-#include <SDL/SDL_opengl.h>
+#include <glad/glad.h>
 #include <imgui/imgui.h>
 #include <imgui/imgui_impl_opengl3.h>
 #include <imgui/imgui_impl_sdl2.h>
@@ -11,6 +13,7 @@
 Window::Window() : m_window { nullptr }, m_glContext { nullptr }
 {
     this->initialize_SDL();
+    this->initialize_OpenGL();
     this->initialize_ImGui();
 }
 
@@ -34,12 +37,28 @@ void Window::initialize_SDL()
         Trace::Error( "SDL_Init Error - "s + SDL_GetError() );
     }
 
+    SDL_version compiled;
+    SDL_VERSION( &compiled );
+    std::cout << "Compiled with " << std::to_string( compiled.major ) << "."
+              << std::to_string( compiled.minor ) << "."
+              << std::to_string( compiled.patch ) << std::endl;
+    SDL_version linked;
+    SDL_GetVersion( &linked );
+    std::cout << "Linked with " << std::to_string( linked.major ) << "."
+              << std::to_string( linked.minor ) << "."
+              << std::to_string( linked.patch ) << std::endl;
+
+    SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
+    SDL_GL_SetAttribute( SDL_GL_DEPTH_SIZE, 24 );
+    SDL_GL_SetAttribute( SDL_GL_STENCIL_SIZE, 8 );
+
     // Set OpenGL attributes
-    SDL_GL_SetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, 3 );
-    SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, 3 );
+    SDL_GL_SetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, 4 );
+    SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, 6 );
     SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK,
                          SDL_GL_CONTEXT_PROFILE_CORE );
 
+    // Default Window size
     SDL_DisplayMode DM;
     SDL_GetCurrentDisplayMode( 0, &DM );
     auto displayWidth  = DM.w;
@@ -48,8 +67,8 @@ void Window::initialize_SDL()
     m_window = SDL_CreateWindow(
         "Explorer (DEV)", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
         displayWidth / 2, displayHeight / 2,
-        SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI
-            | SDL_WINDOW_RESIZABLE );
+        SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI );
+    SDL_SetWindowMinimumSize( m_window, 200, 200 );
 
     if ( ! m_window )
     {
@@ -61,6 +80,25 @@ void Window::initialize_SDL()
     {
         Trace::Error( "SDL_GL_CreateContext Error - "s + SDL_GetError() );
     }
+    SDL_GL_MakeCurrent( m_window, m_glContext );
+
+    // enable VSync
+    SDL_GL_SetSwapInterval( 1 );
+}
+
+void Window::initialize_OpenGL()
+{
+    if ( ! gladLoadGLLoader( SDL_GL_GetProcAddress ) )
+    {
+        std::cerr << "[ERROR] Couldn't initialize glad" << std::endl;
+    }
+
+    int height, width;
+    SDL_GetWindowSize( m_window, &width, &height );
+    glViewport( 0, 0, width, height );
+    glClearColor( 35 / 255.0f, 35 / 255.0f, 35 / 255.0f, 1.00f );
+    glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT
+             | GL_STENCIL_BUFFER_BIT );
 }
 
 namespace
@@ -98,10 +136,10 @@ void Window::initialize_ImGui()
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
 
-    float uiScaleFactor = 1.f;
+    float uiScaleFactor = 2.f;
 
     ImGuiIO & io = ImGui::GetIO();
-    io.Fonts->AddFontFromFileTTF( "./resources/fonts/Inter-Regular.ttf",
+    io.Fonts->AddFontFromFileTTF( "../resources/fonts/Inter-Regular.ttf",
                                   uiScaleFactor * 20.f );
     // ImGuiIO & io = ImGui::GetIO();
     // io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
@@ -115,7 +153,7 @@ void Window::initialize_ImGui()
     initialize_ImGui_style( uiScaleFactor );
 
     ImGui_ImplSDL2_InitForOpenGL( this->getSDLWindow(), m_glContext );
-    ImGui_ImplOpenGL3_Init( "#version 330" );
+    ImGui_ImplOpenGL3_Init( "#version 460" );
 }
 
 void Window::terminate_SDL()

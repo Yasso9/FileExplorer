@@ -18,8 +18,11 @@ class Window
 
     SDL_Window * getSDLWindow ();
 
+    
+
   private:
     void initialize_SDL ();
+    void initialize_OpenGL ();
     void initialize_ImGui ();
     void terminate_SDL ();
     void terminate_ImGui ();

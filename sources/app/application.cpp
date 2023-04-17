@@ -1,7 +1,7 @@
 #include "application.hpp"
 
 #include <SDL/SDL.h>
-#include <SDL/SDL_opengl.h>
+#include <glad/glad.h>
 #include <imgui/imgui.h>
 #include <imgui/imgui_impl_opengl3.h>
 #include <imgui/imgui_impl_sdl2.h>
@@ -31,7 +31,6 @@ void Application::handle_event()
 
 void Application::render()
 {
-    glClear( GL_COLOR_BUFFER_BIT );
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplSDL2_NewFrame( this->window().getSDLWindow() );
     ImGui::NewFrame();
@@ -39,6 +38,14 @@ void Application::render()
     m_explorer.render();
 
     ImGui::Render();
+
+    int height, width;
+    SDL_GetWindowSize( this->window().getSDLWindow(), &width, &height );
+    glViewport( 0, 0, width, height );
+    glClearColor( 35 / 255.0f, 35 / 255.0f, 35 / 255.0f, 1.00f );
+    glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT
+             | GL_STENCIL_BUFFER_BIT );
+
     ImGui_ImplOpenGL3_RenderDrawData( ImGui::GetDrawData() );
     SDL_GL_SwapWindow( this->window().getSDLWindow() );
 }
