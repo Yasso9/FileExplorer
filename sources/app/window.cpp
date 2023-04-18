@@ -49,7 +49,7 @@ void Window::initialize_SDL()
 {
     using namespace std::string_literals;  // Enables "s" suffix for std::string
 
-    if ( SDL_Init( SDL_INIT_VIDEO ) != 0 )
+    if ( SDL_Init( SDL_INIT_EVERYTHING ) != 0 )
     {
         Trace::Error( "SDL_Init Error - "s + SDL_GetError() );
     }
@@ -101,6 +101,9 @@ void Window::initialize_SDL()
 
     // enable VSync
     SDL_GL_SetSwapInterval( 1 );
+
+    // Remove title bar and window border
+    // SDL_SetWindowBordered( m_window, SDL_FALSE );
 }
 
 void Window::initialize_OpenGL()

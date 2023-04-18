@@ -6,6 +6,8 @@
 #include <imgui/imgui_impl_opengl3.h>
 #include <imgui/imgui_impl_sdl2.h>
 
+#include "app/display.hpp"
+
 Application::Application() : m_window {}, m_shouldRun { true }, m_explorer {} {}
 
 void Application::handle_event()
@@ -21,7 +23,10 @@ void Application::handle_event()
             this->should_run( false );
             break;
         case SDL_WINDOWEVENT_RESIZED :
-            glViewport( 0, 0, event.window.data1, event.window.data2 );
+            SDL_SetWindowSize( this->window().getSDLWindow(),
+                               event.window.data1, event.window.data2 );
+            // glViewport( 0, 0, event.window.data1, event.window.data2 );
+            // this->render();
             break;
         }
 
@@ -46,21 +51,27 @@ void Application::render()
                      this->window().get_size().x, this->window().get_size().y );
         ImGui::Text( "Display size : %.1f x %.1f", Window::get_display_size().x,
                      Window::get_display_size().y );
+        ImGui::Text( "Display scaling: %.2f (X) x %.2f (Y)",
+                     io.DisplayFramebufferScale.x,
+                     io.DisplayFramebufferScale.y );
         ImGui::Text( "FPS: %.1f", io.Framerate );
+
+        ImGui::Text( "Font Name: %s", display::get_font_name().c_str() );
+        ImGui::Text( "Font Size: %u", display::get_font_size() );
+        ImGui::Text( "Text Scaling: %.2f", display::get_text_scaling_factor() );
     }
     ImGui::End();
 
     ImGui::Render();
 
-    int height, width;
-    SDL_GetWindowSize( this->window().getSDLWindow(), &width, &height );
-    glViewport( 0, 0, width, height );
-    glClearColor( 35 / 255.0f, 35 / 255.0f, 35 / 255.0f, 1.00f );
-    glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT
-             | GL_STENCIL_BUFFER_BIT );
-
     ImGui_ImplOpenGL3_RenderDrawData( ImGui::GetDrawData() );
     SDL_GL_SwapWindow( this->window().getSDLWindow() );
+
+    glViewport( 0, 0, this->window().get_size().x,
+                this->window().get_size().y );
+    glClearColor( 1.f, 1.f, 1.f, 1.00f );
+    glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT
+             | GL_STENCIL_BUFFER_BIT );
 }
 
 void Application::should_run( bool should_run )

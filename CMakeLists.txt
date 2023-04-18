@@ -15,9 +15,7 @@ add_subdirectory(${SUBMODULES_DIR}/fmt)
 add_library(glad STATIC
     ${SUBMODULES_DIR}/glad/glad.c
 )
-# add_subdirectory(${SUBMODULES_DIR}/SDL)
-# find_package(SDL2 REQUIRED)
-# include_directories(${SDL2_INCLUDE_DIRS})
+add_subdirectory(${SUBMODULES_DIR}/glfw)
 add_library(imgui STATIC
 	${SUBMODULES_DIR}/imgui/imgui.cpp
 	${SUBMODULES_DIR}/imgui/imgui.h
@@ -29,7 +27,7 @@ add_library(imgui STATIC
     ${SUBMODULES_DIR}/imgui/imgui_internal.h
     ${SUBMODULES_DIR}/imgui/imgui_tables.cpp
     ${SUBMODULES_DIR}/imgui/imgui_widgets.cpp
-    ${SUBMODULES_DIR}/imgui/backends/imgui_impl_sdl2.cpp
+    ${SUBMODULES_DIR}/imgui/backends/imgui_impl_glfw.cpp
     ${SUBMODULES_DIR}/imgui/backends/imgui_impl_opengl3.cpp
 )
 
@@ -38,16 +36,14 @@ target_include_directories(glad PUBLIC
 )
 target_include_directories(imgui PUBLIC
     ${SUBMODULES_DIR}/include/imgui
-    ${SUBMODULES_DIR}/include/SDL
-    # ${SDL2_INCLUDE_DIRS}
+    ${SUBMODULES_DIR}/include/glfw
 )
 
 file(GLOB_RECURSE SOURCES "${PROJECT_SOURCE_DIR}/sources/*.cpp")
 add_executable(explorer ${SOURCES})
 
 target_compile_options(explorer PRIVATE -Wall -Wextra -Wpedantic -Werror)
-target_link_libraries(explorer PRIVATE fmt glad SDL2 imgui)
-# target_link_libraries(explorer PRIVATE fmt glad ${SDL2_LIBRARIES} imgui)
+target_link_libraries(explorer PRIVATE fmt glad glfw imgui)
 
 target_include_directories(explorer PUBLIC
     ${SUBMODULES_DIR}/include
