@@ -3,6 +3,7 @@
 #include <memory>
 
 #include <SDL/SDL.h>
+#include <imgui/imgui.h>
 
 class Window
 {
@@ -18,7 +19,8 @@ class Window
 
     SDL_Window * getSDLWindow ();
 
-    
+    ImVec2        get_size ();
+    static ImVec2 get_display_size ( int displayIndex = 0 );
 
   private:
     void initialize_SDL ();

@@ -1,5 +1,6 @@
 #include "window.hpp"
 
+#include <filesystem>
 #include <iostream>
 
 #include <SDL/SDL.h>
@@ -26,6 +27,22 @@ Window::~Window()
 SDL_Window * Window::getSDLWindow()
 {
     return m_window;
+}
+
+ImVec2 Window::get_size()
+{
+    int width, height;
+    SDL_GetWindowSize( m_window, &width, &height );
+    return ImVec2 { static_cast< float >( width ),
+                    static_cast< float >( height ) };
+}
+
+ImVec2 Window::get_display_size( int displayIndex )
+{
+    SDL_DisplayMode DM;
+    SDL_GetCurrentDisplayMode( displayIndex, &DM );
+    return ImVec2 { static_cast< float >( DM.w ),
+                    static_cast< float >( DM.h ) };
 }
 
 void Window::initialize_SDL()
@@ -136,7 +153,7 @@ void Window::initialize_ImGui()
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
 
-    float uiScaleFactor = 2.f;
+    float uiScaleFactor = 1.f;
 
     ImGuiIO & io = ImGui::GetIO();
     io.Fonts->AddFontFromFileTTF( "../resources/fonts/Inter-Regular.ttf",

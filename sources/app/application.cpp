@@ -37,6 +37,19 @@ void Application::render()
 
     m_explorer.render();
 
+    if ( ImGui::Begin( "Window", nullptr ) )
+    {
+        ImGuiIO & io = ImGui::GetIO();
+        ImGui::Text( "Window size (ImGui): %.1f x %.1f", io.DisplaySize.x,
+                     io.DisplaySize.y );
+        ImGui::Text( "Window size (SDL): %.1f x %.1f",
+                     this->window().get_size().x, this->window().get_size().y );
+        ImGui::Text( "Display size : %.1f x %.1f", Window::get_display_size().x,
+                     Window::get_display_size().y );
+        ImGui::Text( "FPS: %.1f", io.Framerate );
+    }
+    ImGui::End();
+
     ImGui::Render();
 
     int height, width;
