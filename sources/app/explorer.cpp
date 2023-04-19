@@ -78,6 +78,23 @@ void Explorer::update()
         {
             m_currentDirectory = ds::get_home_directory();
         }
+        ImGui::SameLine();
+        ImGui::InputText(
+            "##Current Directory",
+            const_cast< char * >( m_currentDirectory.string().c_str() ),
+            m_currentDirectory.string().size() + 1 );
+
+        // Button to go to the previous directory and button to go to the next
+        // directory
+        // if ( ImGui::Button( "Previous" ) )
+        // {
+        //     m_currentDirectory = this->get_previous_directory();
+        // }
+        // ImGui::SameLine();
+        // if ( ImGui::Button( "Next" ) )
+        // {
+        //     m_currentDirectory = this->get_next_directory();
+        // }
 
         this->update_table_gui();
     }
