@@ -7,8 +7,7 @@ int main ()
 
     while ( app.should_run() )
     {
-        app.handle_event();
-        app.render(); 
+        app.update();
     }
 
     return 0;

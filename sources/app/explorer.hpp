@@ -1,13 +1,14 @@
 #pragma once
 
-#include "SDL/SDL.h"
+#include "app/window.hpp"
 
 class Explorer
 {
+    Window const & m_window;
+
   public:
-    Explorer();
+    Explorer( Window const & window );
     virtual ~Explorer() = default;
 
-    void handle_input ( SDL_Event event );
-    void render ();
+    void update ();
 };

@@ -14,13 +14,9 @@ class Application
     Application();
     virtual ~Application() = default;
 
-    void handle_event ();
-    void render ();
+    void update ();
+    void update_elements ();
 
     void should_run ( bool shouldRun );
-    bool should_run ();
-
-    // todo Rename with get_window()
-    Window const & window () const;
-    Window &       window ();
+    bool should_run () const;
 };

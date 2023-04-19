@@ -19,16 +19,25 @@ class Window
     Window( Window const & )              = delete;
     Window & operator= ( Window const & ) = delete;
 
-    GLFWwindow * get_window_backend ();
+    GLFWwindow *       get_backend ();
+    GLFWwindow const * get_backend () const;
 
-    ImVec2               get_size ();
+    ImVec2               get_size () const;
+    ImVec2               get_display_scale () const;
     static ImVec2        get_display_size ();
     static GLFWmonitor * get_primary_monitor ();
 
+    void new_frame () const;
+    void clear () const;
+    void render () const;
+    void swap_buffers () const;
+
+    void reset_imgui_style () const;
+
   private:
     void initialize_GLFW ();
-    void initialize_OpenGL ();
-    void initialize_ImGui ();
-    void terminate_SDL ();
-    void terminate_ImGui ();
+    void initialize_OpenGL () const;
+    void initialize_ImGui () const;
+    void terminate_SDL () const;
+    void terminate_ImGui () const;
 };
