@@ -2,13 +2,15 @@
 
 #include <memory>
 
-#include <SDL/SDL.h>
+#define GLFW_INCLUDE_NONE
+#include <glad/glad.h>
+//
+#include <GLFW/glfw3.h>
 #include <imgui/imgui.h>
 
 class Window
 {
-    SDL_Window *  m_window;
-    SDL_GLContext m_glContext;
+    GLFWwindow * m_window;
 
   public:
     Window();
@@ -17,13 +19,14 @@ class Window
     Window( Window const & )              = delete;
     Window & operator= ( Window const & ) = delete;
 
-    SDL_Window * getSDLWindow ();
+    GLFWwindow * get_window_backend ();
 
-    ImVec2        get_size ();
-    static ImVec2 get_display_size ( int displayIndex = 0 );
+    ImVec2               get_size ();
+    static ImVec2        get_display_size ();
+    static GLFWmonitor * get_primary_monitor ();
 
   private:
-    void initialize_SDL ();
+    void initialize_GLFW ();
     void initialize_OpenGL ();
     void initialize_ImGui ();
     void terminate_SDL ();

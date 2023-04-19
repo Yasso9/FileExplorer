@@ -18,7 +18,7 @@ class Application
     void render ();
 
     void should_run ( bool shouldRun );
-    bool should_run () const;
+    bool should_run ();
 
     // todo Rename with get_window()
     Window const & window () const;

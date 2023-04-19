@@ -15,6 +15,9 @@ add_subdirectory(${SUBMODULES_DIR}/fmt)
 add_library(glad STATIC
     ${SUBMODULES_DIR}/glad/glad.c
 )
+set(GLFW_USE_WAYLAND OFF)
+set(GLFW_BUILD_WAYLAND OFF)
+set(GLFW_BUILD_X11 ON)
 add_subdirectory(${SUBMODULES_DIR}/glfw)
 add_library(imgui STATIC
 	${SUBMODULES_DIR}/imgui/imgui.cpp
