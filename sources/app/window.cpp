@@ -132,7 +132,7 @@ void Window::initialize_OpenGL() const
     if ( ! gladLoadGLLoader(
              reinterpret_cast< GLADloadproc >( glfwGetProcAddress ) ) )
     {
-        std::cerr << "[ERROR] Couldn't initialize glad" << std::endl;
+        Trace::Error( "Couldn't initialize glad" );
     }
 
     Trace::Info( fmt::format(
@@ -144,17 +144,14 @@ void Window::initialize_OpenGL() const
 
 void Window::reset_imgui_style() const
 {
-    float fontScale =
-        display::get_font_size() * display::get_text_scaling_factor() * 3.5f;
     float uiScale =
         std::sqrt( this->get_display_scale().x * this->get_display_scale().y );
 
-    Trace::Info( fmt::format( "Font scale: {}", fontScale ) );
     Trace::Info( fmt::format( "UI scale: {}", uiScale ) );
 
     ImGuiIO & io = ImGui::GetIO();
     io.Fonts->AddFontFromFileTTF( "../resources/fonts/Inter-Regular.ttf",
-                                  fontScale );
+                                  uiScale * 20.f );
 
     ImGui::StyleColorsDark();
 

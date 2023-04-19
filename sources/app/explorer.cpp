@@ -74,7 +74,7 @@ void Explorer::update()
     {
         ImGui::ShowDemoWindow( &showDemoWindow );
     }
-    if ( showDemoWindow )
+    if ( showInfoWindow )
     {
         info_window( m_window );
     }
