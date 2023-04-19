@@ -79,8 +79,9 @@ void Window::new_frame() const
 void Window::clear() const
 {
     glViewport( 0, 0, this->get_size().x, this->get_size().y );
-    glClearColor( 1.f, 1.f, 1.f, 1.f );
-    glClear( GL_COLOR_BUFFER_BIT );
+    glClearColor( 0.2f, 0.2f, 0.2f, 1.f );
+    glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT
+             | GL_STENCIL_BUFFER_BIT );
 }
 
 void Window::render() const

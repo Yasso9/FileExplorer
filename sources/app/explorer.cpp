@@ -2,12 +2,18 @@
 
 #include <iostream>
 
-#include <imgui/imgui.h>
+#include <fmt/core.h>
 
 #include "app/display.hpp"
-#include "app/filesystem.hpp"
 
-Explorer::Explorer( Window const & window ) : m_window { window } {}
+Explorer::Explorer( Window const & window )
+  : m_window { window },
+    m_showDemoWindow { false },
+    m_showInfoWindow { false },
+    m_showHidden { false },
+    m_currentDirectory { ds::get_home_directory() },
+    m_backgroundColor { 0.2f, 0.2f, 0.2f, 1.f }
+{}
 
 namespace
 {
@@ -47,35 +53,116 @@ namespace
 
 void Explorer::update()
 {
-    static bool     showDemoWindow = false;
-    static bool     showInfoWindow = false;
-    static fs::path currentDir { ds::get_home_directory() };
-
     ImGuiWindowFlags fullScreenflags = ImGuiWindowFlags_NoDecoration
                                        | ImGuiWindowFlags_NoMove
                                        | ImGuiWindowFlags_NoBringToFrontOnFocus;
     ImGui::SetNextWindowPos( ImGui::GetMainViewport()->Pos );
     ImGui::SetNextWindowSize( ImGui::GetMainViewport()->Size );
-    ImGui::PushStyleColor( ImGuiCol_WindowBg, ImVec4( 0.2f, 0.2f, 0.2f, 1.f ) );
+    ImGui::PushStyleColor( ImGuiCol_WindowBg, m_backgroundColor );
     ImGui::PushStyleVar( ImGuiStyleVar_WindowRounding, 0.0f );
     ImGui::PushStyleVar( ImGuiStyleVar_WindowBorderSize, 0.0f );
     if ( ImGui::Begin( "File Explorer", nullptr, fullScreenflags ) )
     {
-        ImGui::Checkbox( "Show Demo Window", &showDemoWindow );
-        ImGui::Checkbox( "Show Informations", &showInfoWindow );
+        ImGui::Checkbox( "Show Demo Window", &m_showDemoWindow );
+        ImGui::Checkbox( "Show Informations", &m_showInfoWindow );
+        ImGui::Checkbox( "Show Hidden Files/Folder", &m_showHidden );
 
-        currentDir = ds::show_folder_gui( currentDir );
+        // Button to go to the parent directory and button to go to the home
+        // directory
+        if ( ImGui::Button( "Parent" ) )
+        {
+            m_currentDirectory = m_currentDirectory.parent_path();
+        }
+        ImGui::SameLine();
+        if ( ImGui::Button( "Home" ) )
+        {
+            m_currentDirectory = ds::get_home_directory();
+        }
+
+        this->update_table_gui();
     }
     ImGui::End();
     ImGui::PopStyleColor();
     ImGui::PopStyleVar( 2 );
 
-    if ( showDemoWindow )
+    if ( m_showDemoWindow )
     {
-        ImGui::ShowDemoWindow( &showDemoWindow );
+        ImGui::ShowDemoWindow( &m_showDemoWindow );
     }
-    if ( showInfoWindow )
+    if ( m_showInfoWindow )
     {
         info_window( m_window );
+    }
+}
+
+void Explorer::update_table_gui()
+{
+    ImGuiTableFlags flags = ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable
+                            | ImGuiTableFlags_NoBordersInBodyUntilResize;
+    int nbColumns { 3 };
+
+    if ( ImGui::BeginTable( "Filesystem Item List", nbColumns, flags ) )
+    {
+        ImGui::TableSetupColumn( "Name", ImGuiTableColumnFlags_WidthStretch );
+        ImGui::TableSetupColumn( "Size", ImGuiTableColumnFlags_WidthFixed );
+        ImGui::TableSetupColumn( "Type", ImGuiTableColumnFlags_WidthFixed );
+        ImGui::TableHeadersRow();
+
+        int row { 0 };
+        for ( auto const & entry :
+              fs::directory_iterator( m_currentDirectory ) )
+        {
+            if ( ! ds::is_showed_gui( entry )
+                 || ( ! m_showHidden && ds::is_hidden( entry ) ) )
+            {
+                continue;
+            }
+
+            this->update_row_gui( entry, nbColumns, row );
+            ++row;
+        }
+    }
+    ImGui::EndTable();
+}
+
+void Explorer::update_row_gui( fs::directory_entry entry, int nbColumns,
+                               int row )
+{
+    ImGui::TableNextRow( ImGuiTableRowFlags_None );
+    for ( int column = 0; column < nbColumns; column++ )
+    {
+        ImGui::TableSetColumnIndex( column );
+        std::string label { "None" };
+        switch ( column )
+        {
+        case 0 :
+            label = entry.path().filename().string();
+            break;
+        case 1 :
+            label = std::to_string( ds::get_size( entry ) );
+            break;
+        case 2 :
+            label = ds::get_type( entry ).c_str();
+            break;
+        default :
+            label = "N/A";
+            break;
+        }
+
+        ImGuiSelectableFlags selectable_flags =
+            ImGuiSelectableFlags_SpanAllColumns;
+        // | ImGuiSelectableFlags_AllowItemOverlap;
+        bool        isSelected { false };
+        std::string id { fmt::format( "{}##{},{}", label, column, row ) };
+        ImGui::Selectable( id.c_str(), &isSelected, selectable_flags );
+
+        if ( ImGui::IsItemHovered()
+             && ImGui::IsMouseDoubleClicked( ImGuiMouseButton_Left )
+             && entry.is_directory() )
+        {
+            m_currentDirectory = entry.path();
+            std::cout << "Double Clicked: " << entry.path().filename().string()
+                      << std::endl;
+        }
     }
 }

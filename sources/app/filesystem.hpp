@@ -16,6 +16,4 @@ namespace ds
 
     uintmax_t get_folder_size ( fs::path folder );
     uintmax_t get_size ( fs::directory_entry entry );
-
-    fs::path show_folder_gui ( fs::path directory );
 }  // namespace ds
