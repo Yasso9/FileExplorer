@@ -78,7 +78,6 @@ void Window::new_frame() const
 
 void Window::clear() const
 {
-    glViewport( 0, 0, this->get_size().x, this->get_size().y );
     glClearColor( 0.2f, 0.2f, 0.2f, 1.f );
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT
              | GL_STENCIL_BUFFER_BIT );
@@ -101,6 +100,16 @@ namespace
     {
         Trace::Error( fmt::format( "GLFW {}: {}\n", error, description ) );
     }
+
+    void window_size_callback ( GLFWwindow * /* window */, int width,
+                                int height )
+    {
+        // Trace::Info( fmt::format( "Window resize: {}x{}", width, height ) );
+        // todo use the window render function
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData( ImGui::GetDrawData() );
+        glViewport( 0, 0, width, height );
+    }
 }  // namespace
 
 void Window::initialize_GLFW()
@@ -117,8 +126,11 @@ void Window::initialize_GLFW()
     glfwWindowHint( GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE );
     glfwWindowHint( GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE );
 
-    m_window =
-        glfwCreateWindow( 1280, 720, "File Explorer (DEV)", nullptr, nullptr );
+    m_window = glfwCreateWindow( Window::get_display_size().x * 0.7,
+                                 Window::get_display_size().y * 0.7,
+                                 "File Explorer (DEV)", nullptr, nullptr );
+    glfwSetWindowSizeCallback( m_window, window_size_callback );
+
     if ( m_window == nullptr )
     {
         Trace::Error( "GLFW can't create window" );
@@ -126,6 +138,7 @@ void Window::initialize_GLFW()
 
     glfwMakeContextCurrent( m_window );
     glfwSwapInterval( 1 );  // Enable vsync
+    // glfwSwapInterval( 0 );  // Disable vsync
 }
 
 void Window::initialize_OpenGL() const
@@ -135,6 +148,8 @@ void Window::initialize_OpenGL() const
     {
         Trace::Error( "Couldn't initialize glad" );
     }
+
+    glViewport( 0, 0, this->get_size().x, this->get_size().y );
 
     Trace::Info( fmt::format(
         "OpenGL renderer: {}",

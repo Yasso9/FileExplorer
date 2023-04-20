@@ -15,7 +15,6 @@ Application::Application()
 
 void Application::update()
 {
-    glfwPollEvents();
     if ( glfwWindowShouldClose( m_window.get_backend() ) )
     {
         m_shouldRun = false;
@@ -30,6 +29,9 @@ void Application::update()
 
     m_window.render();
     m_window.swap_buffers();
+
+    // glfwPollEvents();
+    glfwWaitEvents();
 }
 
 void Application::update_elements()
