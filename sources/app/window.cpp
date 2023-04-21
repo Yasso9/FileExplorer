@@ -10,9 +10,11 @@
 #include <imgui/imgui_impl_opengl3.h>
 
 #include "app/display.hpp"
+#include "app/filesystem.hpp"
 #include "tools/traces.hpp"
 
-Window::Window() : m_window { nullptr }
+Window::Window()
+  : m_window { nullptr }, m_eventMode { EventMode::Poll }, m_vsync { true }
 {
     this->initialize_GLFW();
     this->initialize_OpenGL();
@@ -23,6 +25,35 @@ Window::~Window()
 {
     this->terminate_ImGui();
     this->terminate_SDL();
+}
+
+void Window::update( std::function< void() > callback )
+{
+    this->new_frame();
+    this->clear();
+
+    callback();
+
+    this->render();
+    // todo put this if define imguiviewport exist
+    // if ( ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable )
+    // {
+    //     GLFWwindow * backup_current_context = glfwGetCurrentContext();
+    //     ImGui::UpdatePlatformWindows();
+    //     ImGui::RenderPlatformWindowsDefault();
+    //     glfwMakeContextCurrent( backup_current_context );
+    // }
+    glfwSwapBuffers( m_window );
+
+    switch ( m_eventMode )
+    {
+    case EventMode::Poll :
+        glfwPollEvents();
+        break;
+    case EventMode::Wait :
+        glfwWaitEvents();
+        break;
+    }
 }
 
 GLFWwindow * Window::get_backend()
@@ -69,29 +100,25 @@ GLFWmonitor * Window::get_primary_monitor()
     return primaryMonitor;
 }
 
-void Window::new_frame() const
+Window::EventMode Window::get_event_mode() const
 {
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplGlfw_NewFrame();
-    ImGui::NewFrame();
+    return m_eventMode;
 }
 
-void Window::clear() const
+void Window::set_event_mode( Window::EventMode eventMode )
 {
-    glClearColor( 0.2f, 0.2f, 0.2f, 1.f );
-    glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT
-             | GL_STENCIL_BUFFER_BIT );
+    m_eventMode = eventMode;
 }
 
-void Window::render() const
+void Window::set_vsync( bool vsync )
 {
-    ImGui::Render();
-    ImGui_ImplOpenGL3_RenderDrawData( ImGui::GetDrawData() );
+    m_vsync = vsync;
+    glfwSwapInterval( vsync ? 1 : 0 );
 }
 
-void Window::swap_buffers() const
+bool Window::get_vsync() const
 {
-    glfwSwapBuffers( m_window );
+    return m_vsync;
 }
 
 namespace
@@ -104,8 +131,8 @@ namespace
     void window_size_callback ( GLFWwindow * /* window */, int width,
                                 int height )
     {
-        // Trace::Info( fmt::format( "Window resize: {}x{}", width, height ) );
-        // todo use the window render function
+        // Trace::Info( fmt::format( "Window resize: {}x{}", width, height )
+        // ); todo use the window render function
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData( ImGui::GetDrawData() );
         glViewport( 0, 0, width, height );
@@ -137,8 +164,7 @@ void Window::initialize_GLFW()
     }
 
     glfwMakeContextCurrent( m_window );
-    glfwSwapInterval( 1 );  // Enable vsync
-    // glfwSwapInterval( 0 );  // Disable vsync
+    this->set_vsync( m_vsync );
 }
 
 void Window::initialize_OpenGL() const
@@ -158,6 +184,36 @@ void Window::initialize_OpenGL() const
                               GLVersion.minor ) );
 }
 
+namespace
+{
+    fs::path get_executable ()
+    {
+        std::string path;
+
+        char    buffer[PATH_MAX];
+        ssize_t length =
+            readlink( "/proc/self/exe", buffer, sizeof( buffer ) - 1 );
+        if ( length == -1 )
+        {
+            Trace::Error( "Can't get executable path" );
+        }
+
+        // readlink doesn't add the null terminator
+        buffer[length] = '\0';
+        return fs::path { buffer };
+    }
+
+    fs::path get_executable_dir ()
+    {
+        return get_executable().parent_path();
+    }
+
+    fs::path get_resources_dir ()
+    {
+        return get_executable_dir().parent_path() / "resources";
+    }
+}  // namespace
+
 void Window::reset_imgui_style() const
 {
     float uiScale =
@@ -166,8 +222,18 @@ void Window::reset_imgui_style() const
     Trace::Info( fmt::format( "UI scale: {}", uiScale ) );
 
     ImGuiIO & io = ImGui::GetIO();
-    io.Fonts->AddFontFromFileTTF( "../resources/fonts/Inter-Regular.ttf",
-                                  uiScale * 20.f );
+    Trace::Info( fmt::format( "Current program path: {}",
+                              fs::current_path().string() ) );
+    Trace::Info(
+        fmt::format( "Executable path: {}", get_executable_dir().string() ) );
+    Trace::Info( fmt::format(
+        "Resources path: {}",
+        ( get_resources_dir() / "fonts/Inter-Regular.ttf" ).string() ) );
+    io.Fonts->AddFontFromFileTTF(
+        ( get_resources_dir() / "fonts/Inter-Regular.ttf" ).string().c_str(),
+        uiScale * 20.f );
+
+    // io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
     ImGui::StyleColorsDark();
 
@@ -224,4 +290,24 @@ void Window::terminate_ImGui() const
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
+}
+
+void Window::new_frame()
+{
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+}
+
+void Window::clear()
+{
+    glClearColor( 0.2f, 0.2f, 0.2f, 1.f );
+    glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT
+             | GL_STENCIL_BUFFER_BIT );
+}
+
+void Window::render()
+{
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData( ImGui::GetDrawData() );
 }

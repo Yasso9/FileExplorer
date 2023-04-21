@@ -9,9 +9,7 @@
 
 #include "app/display.hpp"
 
-Application::Application()
-  : m_window {}, m_shouldRun { true }, m_explorer { m_window }
-{}
+Application::Application() : m_window {}, m_shouldRun { true }, m_explorer {} {}
 
 void Application::update()
 {
@@ -21,22 +19,12 @@ void Application::update()
         return;
     }
 
-    m_window.new_frame();
-
-    m_window.clear();
-
-    this->update_elements();
-
-    m_window.render();
-    m_window.swap_buffers();
-
-    // glfwPollEvents();
-    glfwWaitEvents();
+    m_window.update( [this] () { this->update_elements(); } );
 }
 
 void Application::update_elements()
 {
-    m_explorer.update();
+    m_explorer.update( m_window );
 }
 
 void Application::should_run( bool should_run )

@@ -6,10 +6,10 @@
 
 #include "app/display.hpp"
 
-Explorer::Explorer( Window const & window )
-  : m_window { window },
-    m_showDemoWindow { false },
+Explorer::Explorer()
+  : m_showDemoWindow { false },
     m_showInfoWindow { false },
+    m_showWindowConfig { false },
     m_showHidden { false },
     m_currentDirectory { ds::get_home_directory() },
     m_backgroundColor { 0.2f, 0.2f, 0.2f, 1.f }
@@ -17,7 +17,7 @@ Explorer::Explorer( Window const & window )
 
 namespace
 {
-    void info_window ( Window const & window )
+    void information ( Window const & window )
     {
         if ( ImGui::Begin( "Window", nullptr ) )
         {
@@ -49,9 +49,35 @@ namespace
         }
         ImGui::End();
     }
+
+    void window_configuration ( Window & window )
+    {
+        if ( ImGui::Begin( "Window Configuration", nullptr ) )
+        {
+            ImGui::Text( "Event Mode" );
+            if ( ImGui::RadioButton( "Poll", window.get_event_mode()
+                                                 == Window::EventMode::Poll ) )
+            {
+                window.set_event_mode( Window::EventMode::Poll );
+            }
+            ImGui::SameLine();
+            if ( ImGui::RadioButton( "Wait", window.get_event_mode()
+                                                 == Window::EventMode::Wait ) )
+            {
+                window.set_event_mode( Window::EventMode::Wait );
+            }
+
+            bool vsync = window.get_vsync();
+            if ( ImGui::Checkbox( "Vsync", &vsync ) )
+            {
+                window.set_vsync( vsync );
+            }
+        }
+        ImGui::End();
+    }
 }  // namespace
 
-void Explorer::update()
+void Explorer::update( Window & window )
 {
     ImGuiWindowFlags fullScreenflags = ImGuiWindowFlags_NoDecoration
                                        | ImGuiWindowFlags_NoMove
@@ -65,6 +91,7 @@ void Explorer::update()
     {
         ImGui::Checkbox( "Show Demo Window", &m_showDemoWindow );
         ImGui::Checkbox( "Show Informations", &m_showInfoWindow );
+        ImGui::Checkbox( "Show Window Configuration", &m_showWindowConfig );
         ImGui::Checkbox( "Show Hidden Files/Folder", &m_showHidden );
 
         // Button to go to the parent directory and button to go to the home
@@ -84,9 +111,8 @@ void Explorer::update()
             const_cast< char * >( m_currentDirectory.string().c_str() ),
             m_currentDirectory.string().size() + 1 );
 
-        // Button to go to the previous directory and button to go to the next
-        // directory
-        // if ( ImGui::Button( "Previous" ) )
+        // Button to go to the previous directory and button to go to the
+        // next directory if ( ImGui::Button( "Previous" ) )
         // {
         //     m_currentDirectory = this->get_previous_directory();
         // }
@@ -108,7 +134,11 @@ void Explorer::update()
     }
     if ( m_showInfoWindow )
     {
-        info_window( m_window );
+        information( window );
+    }
+    if ( m_showWindowConfig )
+    {
+        window_configuration( window );
     }
 }
 
