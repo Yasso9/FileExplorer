@@ -5,14 +5,19 @@
 #include <fmt/core.h>
 
 #include "app/display.hpp"
+#include "tools/traces.hpp"
 
 Explorer::Explorer()
   : m_showDemoWindow { false },
     m_showInfoWindow { false },
     m_showWindowConfig { false },
     m_showHidden { false },
+    m_showDebugWindow { false },
     m_currentDirectory { ds::get_home_directory() },
-    m_backgroundColor { 0.2f, 0.2f, 0.2f, 1.f }
+    m_backgroundColor { 0.2f, 0.2f, 0.2f, 1.f },
+    m_previousDirectories {},
+    m_nextDirectories {},
+    m_maxHistorySize { 15 }
 {}
 
 namespace
@@ -93,34 +98,33 @@ void Explorer::update( Window & window )
         ImGui::Checkbox( "Show Informations", &m_showInfoWindow );
         ImGui::Checkbox( "Show Window Configuration", &m_showWindowConfig );
         ImGui::Checkbox( "Show Hidden Files/Folder", &m_showHidden );
+        ImGui::Checkbox( "Show Explorer Debug Window", &m_showDebugWindow );
+        ImGui::Separator();
 
-        // Button to go to the parent directory and button to go to the home
-        // directory
+        if ( ImGui::Button( "Previous" ) )
+        {
+            this->change_to_previous_dir();
+        }
+        ImGui::SameLine();
+        if ( ImGui::Button( "Next" ) )
+        {
+            this->change_to_next_dir();
+        }
+        ImGui::SameLine();
         if ( ImGui::Button( "Parent" ) )
         {
-            m_currentDirectory = m_currentDirectory.parent_path();
+            this->change_directory( m_currentDirectory.parent_path() );
         }
         ImGui::SameLine();
         if ( ImGui::Button( "Home" ) )
         {
-            m_currentDirectory = ds::get_home_directory();
+            this->change_directory( ds::get_home_directory() );
         }
         ImGui::SameLine();
         ImGui::InputText(
             "##Current Directory",
             const_cast< char * >( m_currentDirectory.string().c_str() ),
             m_currentDirectory.string().size() + 1 );
-
-        // Button to go to the previous directory and button to go to the
-        // next directory if ( ImGui::Button( "Previous" ) )
-        // {
-        //     m_currentDirectory = this->get_previous_directory();
-        // }
-        // ImGui::SameLine();
-        // if ( ImGui::Button( "Next" ) )
-        // {
-        //     m_currentDirectory = this->get_next_directory();
-        // }
 
         this->update_table_gui();
     }
@@ -139,6 +143,38 @@ void Explorer::update( Window & window )
     if ( m_showWindowConfig )
     {
         window_configuration( window );
+    }
+    if ( m_showDebugWindow )
+    {
+        this->debug_window();
+    }
+}
+
+void Explorer::change_directory( fs::path const & path )
+{
+    m_previousDirectories.push_back( m_currentDirectory );
+    m_nextDirectories.clear();
+
+    m_currentDirectory = path;
+}
+
+void Explorer::change_to_previous_dir()
+{
+    if ( ! m_previousDirectories.empty() )
+    {
+        this->add_to_next_dir( m_currentDirectory );
+        m_currentDirectory = fs::path { m_previousDirectories.back() };
+        m_previousDirectories.pop_back();
+    }
+}
+
+void Explorer::change_to_next_dir()
+{
+    if ( ! m_nextDirectories.empty() )
+    {
+        this->add_to_previous_dir( m_currentDirectory );
+        m_currentDirectory = fs::path { m_nextDirectories.back() };
+        m_nextDirectories.pop_back();
     }
 }
 
@@ -207,9 +243,56 @@ void Explorer::update_row_gui( fs::directory_entry entry, int nbColumns,
              && ImGui::IsMouseDoubleClicked( ImGuiMouseButton_Left )
              && entry.is_directory() )
         {
-            m_currentDirectory = entry.path();
-            std::cout << "Double Clicked: " << entry.path().filename().string()
-                      << std::endl;
+            this->change_directory( entry.path() );
+            Trace::Debug( "Double Clicked: "
+                          + entry.path().filename().string() );
         }
+    }
+}
+
+void Explorer::debug_window()
+{
+    if ( ImGui::Begin( "Explorer Informations", nullptr ) )
+    {
+        ImGui::Text( "Current Directory : %s",
+                     m_currentDirectory.string().c_str() );
+
+        // Button to reset previous and next directories
+        if ( ImGui::Button( "Reset Previous/Next Directories" ) )
+        {
+            m_previousDirectories.clear();
+            m_nextDirectories.clear();
+        }
+        ImGui::Text( "Previous Directories :" );
+        for ( auto const & dir : m_previousDirectories )
+        {
+            ImGui::Text( "%s", dir.string().c_str() );
+        }
+        ImGui::Separator();
+        ImGui::Text( "Next Directories :" );
+        for ( auto const & dir : m_nextDirectories )
+        {
+            ImGui::Text( "%s", dir.string().c_str() );
+        }
+    }
+    ImGui::End();
+}
+
+void Explorer::add_to_previous_dir( fs::path const & path )
+{
+    m_previousDirectories.push_back( fs::path { path } );
+    if ( m_previousDirectories.size() > m_maxHistorySize )
+    {
+        m_previousDirectories.erase( m_previousDirectories.begin() );
+    }
+}
+
+void Explorer::add_to_next_dir( fs::path const & path )
+{
+    // todo check if it's necessary to copy the path ?
+    m_nextDirectories.push_back( fs::path { path } );
+    if ( m_nextDirectories.size() > m_maxHistorySize )
+    {
+        m_nextDirectories.erase( m_nextDirectories.begin() );
     }
 }
