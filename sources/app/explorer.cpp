@@ -208,6 +208,38 @@ void Explorer::update_table_gui()
     ImGui::EndTable();
 }
 
+namespace
+{
+    std::string get_open_command ()
+    {
+        std::string command;
+#if defined( _WIN32 )
+        command = "start";
+#elif defined( __APPLE__ )
+        command = "open";
+#elif defined( __linux__ )
+        command = "xdg-open";
+#else
+        Trace::Error( "Unsupported operating system" );
+#endif
+        return command;
+    }
+
+    bool open_file ( fs::path const & file )
+    {
+        std::string command { get_open_command() + " \"" + file.string()
+                              + "\"" };
+
+        int result = std::system( command.c_str() );
+        if ( result )
+        {
+            Trace::Error( "Error opening file with default program." );
+            return false;
+        }
+        return true;
+    }
+}  // namespace
+
 void Explorer::update_row_gui( fs::directory_entry entry, int nbColumns,
                                int row )
 {
@@ -240,12 +272,18 @@ void Explorer::update_row_gui( fs::directory_entry entry, int nbColumns,
         ImGui::Selectable( id.c_str(), &isSelected, selectable_flags );
 
         if ( ImGui::IsItemHovered()
-             && ImGui::IsMouseDoubleClicked( ImGuiMouseButton_Left )
-             && entry.is_directory() )
+             && ImGui::IsMouseDoubleClicked( ImGuiMouseButton_Left ) )
         {
-            this->change_directory( entry.path() );
             Trace::Debug( "Double Clicked: "
                           + entry.path().filename().string() );
+            if ( entry.is_directory() )
+            {
+                this->change_directory( entry.path() );
+            }
+            else
+            {
+                open_file( entry.path() );
+            }
         }
     }
 }
