@@ -1,5 +1,6 @@
 #include "explorer.hpp"
 
+#include <climits>
 #include <iostream>
 
 #include <fmt/core.h>
@@ -14,6 +15,7 @@ Explorer::Explorer()
     m_showHidden { false },
     m_showDebugWindow { false },
     m_currentDirectory { ds::get_home_directory() },
+    m_searchBox { m_currentDirectory.string() },
     m_backgroundColor { 0.2f, 0.2f, 0.2f, 1.f },
     m_previousDirectories {},
     m_nextDirectories {},
@@ -80,6 +82,43 @@ namespace
         }
         ImGui::End();
     }
+
+    std::string to_lowercase ( std::string const & str )
+    {
+        std::string lowercase {};
+        lowercase.reserve( str.size() );
+        std::transform( str.begin(), str.end(), std::back_inserter( lowercase ),
+                        [] ( unsigned char c ) { return std::tolower( c ); } );
+        return lowercase;
+    }
+
+    std::vector< fs::path > filter_entry ( fs::path const &    directory,
+                                           std::string const & entryFilter,
+                                           bool                showHidden )
+    {
+        std::vector< fs::path > entries {};
+
+        if ( ! fs::exists( directory ) && ! fs::is_directory( directory ) )
+        {
+            return entries;
+        }
+        for ( auto const & entry : fs::directory_iterator( directory ) )
+        {
+            if ( ! showHidden && ds::is_hidden( entry ) )
+            {
+                continue;
+            }
+
+            if ( to_lowercase( entry.path().filename().string() )
+                     .find( to_lowercase( entryFilter ) )
+                 != std::string::npos )
+            {
+                entries.push_back( entry.path() );
+            }
+        }
+
+        return entries;
+    }
 }  // namespace
 
 void Explorer::update( Window & window )
@@ -121,10 +160,60 @@ void Explorer::update( Window & window )
             this->change_directory( ds::get_home_directory() );
         }
         ImGui::SameLine();
-        ImGui::InputText(
-            "##Current Directory",
-            const_cast< char * >( m_currentDirectory.string().c_str() ),
-            m_currentDirectory.string().size() + 1 );
+        // todo enable refresh button
+        // if ( ImGui::Button( "Refresh" ) )
+        // {
+        //     this->refresh();
+        // }
+
+        char currentDir[PATH_MAX];
+        std::strcpy( currentDir, m_searchBox.c_str() );
+        ImGui::InputText( "##Current Directory", currentDir, PATH_MAX );
+        m_searchBox = currentDir;
+
+        bool isInputTextPressed {
+            ImGui::IsItemFocused()
+            && ImGui::IsKeyPressed( ImGui::GetKeyIndex( ImGuiKey_Enter ) ) };
+        bool isInputTextActive { ImGui::IsItemActive() };
+
+        if ( ImGui::IsItemActivated() )
+        {
+            ImGui::OpenPopup( "Entry Autocompletion",
+                              ImGuiPopupFlags_NoOpenOverExistingPopup );
+        }
+
+        ImGui::SetNextWindowPos(
+            ImVec2( ImGui::GetItemRectMin().x, ImGui::GetItemRectMax().y ) );
+        if ( ImGui::BeginPopup( "Entry Autocompletion",
+                                ImGuiWindowFlags_NoTitleBar
+                                    | ImGuiWindowFlags_NoMove
+                                    | ImGuiWindowFlags_NoResize
+                                    | ImGuiWindowFlags_ChildWindow ) )
+        {
+            for ( auto const & entry : filter_entry(
+                      m_searchBox.parent_path(),
+                      m_searchBox.filename().string(), m_showHidden ) )
+            {
+                if ( ImGui::Selectable( entry.string().c_str() ) )
+                {
+                    this->change_directory( entry );
+                    ImGui::CloseCurrentPopup();
+                }
+            }
+            if ( isInputTextPressed
+                 || ( ! isInputTextActive && ! ImGui::IsWindowFocused() ) )
+            {
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::EndPopup();
+        }
+        if ( isInputTextPressed )
+        {
+            if ( fs::exists( m_searchBox ) )
+            {
+                this->open_entry( fs::directory_entry { m_searchBox } );
+            }
+        }
 
         this->update_table_gui();
     }
@@ -146,7 +235,7 @@ void Explorer::update( Window & window )
     }
     if ( m_showDebugWindow )
     {
-        this->debug_window();
+        this->update_debug();
     }
 }
 
@@ -156,6 +245,7 @@ void Explorer::change_directory( fs::path const & path )
     m_nextDirectories.clear();
 
     m_currentDirectory = path;
+    m_searchBox        = m_currentDirectory;
 }
 
 void Explorer::change_to_previous_dir()
@@ -163,7 +253,8 @@ void Explorer::change_to_previous_dir()
     if ( ! m_previousDirectories.empty() )
     {
         this->add_to_next_dir( m_currentDirectory );
-        m_currentDirectory = fs::path { m_previousDirectories.back() };
+        m_currentDirectory = m_previousDirectories.back();
+        m_searchBox        = m_currentDirectory;
         m_previousDirectories.pop_back();
     }
 }
@@ -173,7 +264,8 @@ void Explorer::change_to_next_dir()
     if ( ! m_nextDirectories.empty() )
     {
         this->add_to_previous_dir( m_currentDirectory );
-        m_currentDirectory = fs::path { m_nextDirectories.back() };
+        m_currentDirectory = m_nextDirectories.back();
+        m_searchBox        = m_currentDirectory;
         m_nextDirectories.pop_back();
     }
 }
@@ -276,19 +368,12 @@ void Explorer::update_row_gui( fs::directory_entry entry, int nbColumns,
         {
             Trace::Debug( "Double Clicked: "
                           + entry.path().filename().string() );
-            if ( entry.is_directory() )
-            {
-                this->change_directory( entry.path() );
-            }
-            else
-            {
-                open_file( entry.path() );
-            }
+            this->open_entry( entry );
         }
     }
 }
 
-void Explorer::debug_window()
+void Explorer::update_debug()
 {
     if ( ImGui::Begin( "Explorer Informations", nullptr ) )
     {
@@ -332,5 +417,17 @@ void Explorer::add_to_next_dir( fs::path const & path )
     if ( m_nextDirectories.size() > m_maxHistorySize )
     {
         m_nextDirectories.erase( m_nextDirectories.begin() );
+    }
+}
+
+void Explorer::open_entry( fs::directory_entry const & entry )
+{
+    if ( entry.is_directory() )
+    {
+        this->change_directory( entry.path() );
+    }
+    else
+    {
+        open_file( entry.path() );
     }
 }

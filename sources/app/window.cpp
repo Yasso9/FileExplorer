@@ -234,6 +234,7 @@ void Window::reset_imgui_style() const
         uiScale * 20.f );
 
     // io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 
     ImGui::StyleColorsDark();
 
