@@ -4,6 +4,8 @@
 
 #include <imgui/imgui.h>
 
+#include "tools/traces.hpp"
+
 namespace ds
 {
     fs::path get_home_directory ()
@@ -71,5 +73,34 @@ namespace ds
         {
             return entry.file_size();
         }
+    }
+
+    std::string get_open_command ()
+    {
+        std::string command;
+#if defined( _WIN32 )
+        command = "start";
+#elif defined( __APPLE__ )
+        command = "open";
+#elif defined( __linux__ )
+        command = "xdg-open";
+#else
+        Trace::Error( "Unsupported operating system" );
+#endif
+        return command;
+    }
+
+    bool open ( fs::path const & file )
+    {
+        std::string command { get_open_command() + " \"" + file.string()
+                              + "\"" };
+
+        int result = std::system( command.c_str() );
+        if ( result )
+        {
+            Trace::Error( "Error opening file with default program." );
+            return false;
+        }
+        return true;
     }
 }  // namespace ds

@@ -16,4 +16,8 @@ namespace ds
 
     uintmax_t get_folder_size ( fs::path folder );
     uintmax_t get_size ( fs::directory_entry entry );
+
+    std::string get_open_command ();
+    // Open entry with default application
+    bool        open ( fs::path const & file );
 }  // namespace ds

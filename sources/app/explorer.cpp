@@ -6,6 +6,7 @@
 #include <fmt/core.h>
 
 #include "app/display.hpp"
+#include "tools/string.hpp"
 #include "tools/traces.hpp"
 
 namespace
@@ -59,21 +60,13 @@ namespace
         }
     }
 
-    std::string to_lowercase ( std::string const & str )
-    {
-        std::string lowercase {};
-        lowercase.reserve( str.size() );
-        std::transform( str.begin(), str.end(), std::back_inserter( lowercase ),
-                        [] ( unsigned char c ) { return std::tolower( c ); } );
-        return lowercase;
-    }
-
     std::vector< fs::path > filter_entry ( fs::path const &    directory,
                                            std::string const & entryFilter,
                                            bool                showHidden )
     {
         std::vector< fs::path > entries {};
 
+        // Check if the directory exists
         if ( ! fs::exists( directory ) && ! fs::is_directory( directory ) )
         {
             return entries;
@@ -85,8 +78,8 @@ namespace
                 continue;
             }
 
-            if ( to_lowercase( entry.path().filename().string() )
-                     .find( to_lowercase( entryFilter ) )
+            if ( string::to_lowercase( entry.path().filename().string() )
+                     .find( string::to_lowercase( entryFilter ) )
                  != std::string::npos )
             {
                 entries.push_back( entry.path() );
@@ -132,6 +125,11 @@ void Explorer::update()
     }
     ImGui::End();
     ImGui::PopStyleColor();
+
+    if ( m_showDemoWindow )
+    {
+        ImGui::ShowDemoWindow( &m_showDemoWindow );
+    }
 }
 
 void Explorer::change_directory( fs::path const & path )
@@ -269,7 +267,8 @@ void Explorer::update_settings()
 
     ImGui::Begin( "Settings", &m_showSettings, settingsFlags );
 
-    if ( ImGui::BeginTabBar( "SettingsTab" ) )
+    ImGuiTabBarFlags tabBarFlags = ImGuiTabBarFlags_None;
+    if ( ImGui::BeginTabBar( "SettingsTab", tabBarFlags ) )
     {
         if ( ImGui::BeginTabItem( "Preferences" ) )
         {
@@ -295,11 +294,6 @@ void Explorer::update_settings()
         ImGui::EndTabBar();
     }
 
-    if ( m_showDemoWindow )
-    {
-        ImGui::ShowDemoWindow( &m_showDemoWindow );
-    }
-
     ImGui::End();
 }
 
@@ -309,6 +303,9 @@ void Explorer::update_table_gui()
                             | ImGuiTableFlags_NoBordersInBodyUntilResize;
     int nbColumns { 3 };
 
+    ImGui::PushStyleVar( ImGuiStyleVar_CellPadding, ImVec2 { 0.f, 10.f } );
+    ImGui::PushStyleVar( ImGuiStyleVar_SelectableTextAlign,
+                         ImVec2 { 0.01f, 0.5f } );
     if ( ImGui::BeginTable( "Filesystem Item List", nbColumns, flags ) )
     {
         ImGui::TableSetupColumn( "Name", ImGuiTableColumnFlags_WidthStretch );
@@ -330,40 +327,9 @@ void Explorer::update_table_gui()
             ++row;
         }
     }
+    ImGui::PopStyleVar( 2 );
     ImGui::EndTable();
 }
-
-namespace
-{
-    std::string get_open_command ()
-    {
-        std::string command;
-#if defined( _WIN32 )
-        command = "start";
-#elif defined( __APPLE__ )
-        command = "open";
-#elif defined( __linux__ )
-        command = "xdg-open";
-#else
-        Trace::Error( "Unsupported operating system" );
-#endif
-        return command;
-    }
-
-    bool open_file ( fs::path const & file )
-    {
-        std::string command { get_open_command() + " \"" + file.string()
-                              + "\"" };
-
-        int result = std::system( command.c_str() );
-        if ( result )
-        {
-            Trace::Error( "Error opening file with default program." );
-            return false;
-        }
-        return true;
-    }
-}  // namespace
 
 void Explorer::update_row_gui( fs::directory_entry entry, int nbColumns,
                                int row )
@@ -394,7 +360,8 @@ void Explorer::update_row_gui( fs::directory_entry entry, int nbColumns,
         // | ImGuiSelectableFlags_AllowItemOverlap;
         bool        isSelected { false };
         std::string id { fmt::format( "{}##{},{}", label, column, row ) };
-        ImGui::Selectable( id.c_str(), &isSelected, selectable_flags );
+        ImGui::Selectable( id.c_str(), &isSelected, selectable_flags,
+                           ImVec2 { 0, 50.f } );
 
         if ( ImGui::IsItemHovered()
              && ImGui::IsMouseDoubleClicked( ImGuiMouseButton_Left ) )
@@ -457,6 +424,6 @@ void Explorer::open_entry( fs::directory_entry const & entry )
     }
     else
     {
-        open_file( entry.path() );
+        ds::open( entry.path() );
     }
 }

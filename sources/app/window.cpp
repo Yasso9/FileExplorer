@@ -269,13 +269,22 @@ void Window::reset_imgui_style() const
     style.WindowMenuButtonPosition = ImGuiDir_None;
     style.ColorButtonPosition      = ImGuiDir_Right;
     style.ButtonTextAlign          = ImVec2 { 0.5f, 0.5f };
-    style.SelectableTextAlign      = ImVec2 { 0.f, 0.f };
+    style.SelectableTextAlign      = ImVec2 { 0.f, 0.5f };
     style.SeparatorTextBorderSize  = 3.f;
     style.SeparatorTextAlign       = ImVec2 { 0.5f, 0.5f };
     style.SeparatorTextPadding     = ImVec2 { 0.5f, 0.5f };
     style.LogSliderDeadzone        = 0.5f;
 
     style.DisplaySafeAreaPadding = ImVec2 { 3.f, 3.f };
+
+    style.Colors[ImGuiCol_TableHeaderBg] =
+        ImVec4 { 0.25f, 0.25f, 0.25f, 1.00f };
+    style.Colors[ImGuiCol_TableBorderLight] =
+        ImVec4 { 0.80f, 0.80f, 0.80f, 1.00f };
+    style.Colors[ImGuiCol_TableBorderStrong] =
+        ImVec4 { 0.70f, 0.70f, 0.70f, 1.00f };
+    style.Colors[ImGuiCol_Text]           = ImVec4 { 1.0f, 1.0f, 1.0f, 1.0f };
+    style.Colors[ImGuiCol_TextSelectedBg] = ImVec4 { 0.0f, 0.0f, 0.0f, 1.0f };
 
     style.ScaleAllSizes( uiScale );
 }

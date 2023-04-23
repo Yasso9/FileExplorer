@@ -11,6 +11,7 @@ class Explorer
 {
     Window & m_window;
 
+    // todo put these attributes in a config struct
     bool         m_showSettings;
     bool         m_showDemoWindow;
     bool         m_showHidden;
