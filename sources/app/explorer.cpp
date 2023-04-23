@@ -8,79 +8,55 @@
 #include "app/display.hpp"
 #include "tools/traces.hpp"
 
-Explorer::Explorer()
-  : m_showDemoWindow { false },
-    m_showInfoWindow { false },
-    m_showWindowConfig { false },
-    m_showHidden { false },
-    m_showDebugWindow { false },
-    m_currentDirectory { ds::get_home_directory() },
-    m_searchBox { m_currentDirectory.string() },
-    m_backgroundColor { 0.2f, 0.2f, 0.2f, 1.f },
-    m_previousDirectories {},
-    m_nextDirectories {},
-    m_maxHistorySize { 15 }
-{}
-
 namespace
 {
     void information ( Window const & window )
     {
-        if ( ImGui::Begin( "Window", nullptr ) )
-        {
-            ImGuiIO & io = ImGui::GetIO();
-            ImGui::Text( "Window size (ImGui): %.1f x %.1f", io.DisplaySize.x,
-                         io.DisplaySize.y );
-            ImGui::Text( "Window size (GLFW): %.1f x %.1f", window.get_size().x,
-                         window.get_size().y );
-            ImGui::Text( "Display size : %.1f x %.1f",
-                         Window::get_display_size().x,
-                         Window::get_display_size().y );
-            ImGui::Text( "Display scaling (ImGui): %.1f x %.1f",
-                         io.DisplayFramebufferScale.x,
-                         io.DisplayFramebufferScale.y );
-            ImGui::Text( "Display scaling (GLFW): %.1f x %.1f",
-                         window.get_display_scale().x,
-                         window.get_display_scale().y );
+        ImGuiIO & io = ImGui::GetIO();
+        ImGui::Text( "Window size (ImGui): %.1f x %.1f", io.DisplaySize.x,
+                     io.DisplaySize.y );
+        ImGui::Text( "Window size (GLFW): %.1f x %.1f", window.get_size().x,
+                     window.get_size().y );
+        ImGui::Text( "Display size : %.1f x %.1f", Window::get_display_size().x,
+                     Window::get_display_size().y );
+        ImGui::Text( "Display scaling (ImGui): %.1f x %.1f",
+                     io.DisplayFramebufferScale.x,
+                     io.DisplayFramebufferScale.y );
+        ImGui::Text( "Display scaling (GLFW): %.1f x %.1f",
+                     window.get_display_scale().x,
+                     window.get_display_scale().y );
 
-            ImGui::Separator();
+        ImGui::Separator();
 
-            ImGui::Text( "FPS: %.1f", io.Framerate );
+        ImGui::Text( "FPS: %.1f", io.Framerate );
 
-            ImGui::Separator();
+        ImGui::Separator();
 
-            ImGui::Text( "Font Name: %s", display::get_font_name().c_str() );
-            ImGui::Text( "Font Size: %u", display::get_font_size() );
-            ImGui::Text( "Text Scaling: %.2f",
-                         display::get_text_scaling_factor() );
-        }
-        ImGui::End();
+        ImGui::Text( "Font Name: %s", display::get_font_name().c_str() );
+        ImGui::Text( "Font Size: %u", display::get_font_size() );
+        ImGui::Text( "Text Scaling: %.2f", display::get_text_scaling_factor() );
     }
 
     void window_configuration ( Window & window )
     {
-        if ( ImGui::Begin( "Window Configuration", nullptr ) )
+        ImGui::Text( "Event Mode" );
+        if ( ImGui::RadioButton(
+                 "Poll", window.get_event_mode() == Window::EventMode::Poll ) )
         {
-            ImGui::Text( "Event Mode" );
-            if ( ImGui::RadioButton( "Poll", window.get_event_mode()
-                                                 == Window::EventMode::Poll ) )
-            {
-                window.set_event_mode( Window::EventMode::Poll );
-            }
-            ImGui::SameLine();
-            if ( ImGui::RadioButton( "Wait", window.get_event_mode()
-                                                 == Window::EventMode::Wait ) )
-            {
-                window.set_event_mode( Window::EventMode::Wait );
-            }
-
-            bool vsync = window.get_vsync();
-            if ( ImGui::Checkbox( "Vsync", &vsync ) )
-            {
-                window.set_vsync( vsync );
-            }
+            window.set_event_mode( Window::EventMode::Poll );
         }
-        ImGui::End();
+        ImGui::SameLine();
+        if ( ImGui::RadioButton(
+                 "Wait", window.get_event_mode() == Window::EventMode::Wait ) )
+        {
+            window.set_event_mode( Window::EventMode::Wait );
+        }
+
+        bool vsync = window.get_vsync();
+        if ( ImGui::Checkbox( "Vsync", &vsync ) )
+        {
+            window.set_vsync( vsync );
+        }
     }
 
     std::string to_lowercase ( std::string const & str )
@@ -121,7 +97,20 @@ namespace
     }
 }  // namespace
 
-void Explorer::update( Window & window )
+Explorer::Explorer( Window & window )
+  : m_window { window },
+    m_showSettings { false },
+    m_showDemoWindow { false },
+    m_showHidden { false },
+    m_backgroundColor { 0.2f, 0.2f, 0.2f, 1.f },
+    m_maxHistorySize { 15 },
+    m_currentDirectory { ds::get_home_directory() },
+    m_searchBox { m_currentDirectory.string() },
+    m_previousDirectories {},
+    m_nextDirectories {}
+{}
+
+void Explorer::update()
 {
     ImGuiWindowFlags fullScreenflags = ImGuiWindowFlags_NoDecoration
                                        | ImGuiWindowFlags_NoMove
@@ -133,110 +122,16 @@ void Explorer::update( Window & window )
     ImGui::PushStyleVar( ImGuiStyleVar_WindowBorderSize, 0.0f );
     if ( ImGui::Begin( "File Explorer", nullptr, fullScreenflags ) )
     {
-        ImGui::Checkbox( "Show Demo Window", &m_showDemoWindow );
-        ImGui::Checkbox( "Show Informations", &m_showInfoWindow );
-        ImGui::Checkbox( "Show Window Configuration", &m_showWindowConfig );
-        ImGui::Checkbox( "Show Hidden Files/Folder", &m_showHidden );
-        ImGui::Checkbox( "Show Explorer Debug Window", &m_showDebugWindow );
-        ImGui::Separator();
-
-        if ( ImGui::Button( "Previous" ) )
-        {
-            this->change_to_previous_dir();
-        }
-        ImGui::SameLine();
-        if ( ImGui::Button( "Next" ) )
-        {
-            this->change_to_next_dir();
-        }
-        ImGui::SameLine();
-        if ( ImGui::Button( "Parent" ) )
-        {
-            this->change_directory( m_currentDirectory.parent_path() );
-        }
-        ImGui::SameLine();
-        if ( ImGui::Button( "Home" ) )
-        {
-            this->change_directory( ds::get_home_directory() );
-        }
-        ImGui::SameLine();
-        // todo enable refresh button
-        // if ( ImGui::Button( "Refresh" ) )
-        // {
-        //     this->refresh();
-        // }
-
-        char currentDir[PATH_MAX];
-        std::strcpy( currentDir, m_searchBox.c_str() );
-        ImGui::InputText( "##Current Directory", currentDir, PATH_MAX );
-        m_searchBox = currentDir;
-
-        bool isInputTextPressed {
-            ImGui::IsItemFocused()
-            && ImGui::IsKeyPressed( ImGui::GetKeyIndex( ImGuiKey_Enter ) ) };
-        bool isInputTextActive { ImGui::IsItemActive() };
-
-        if ( ImGui::IsItemActivated() )
-        {
-            ImGui::OpenPopup( "Entry Autocompletion",
-                              ImGuiPopupFlags_NoOpenOverExistingPopup );
-        }
-
-        ImGui::SetNextWindowPos(
-            ImVec2( ImGui::GetItemRectMin().x, ImGui::GetItemRectMax().y ) );
-        if ( ImGui::BeginPopup( "Entry Autocompletion",
-                                ImGuiWindowFlags_NoTitleBar
-                                    | ImGuiWindowFlags_NoMove
-                                    | ImGuiWindowFlags_NoResize
-                                    | ImGuiWindowFlags_ChildWindow ) )
-        {
-            for ( auto const & entry : filter_entry(
-                      m_searchBox.parent_path(),
-                      m_searchBox.filename().string(), m_showHidden ) )
-            {
-                if ( ImGui::Selectable( entry.string().c_str() ) )
-                {
-                    this->change_directory( entry );
-                    ImGui::CloseCurrentPopup();
-                }
-            }
-            if ( isInputTextPressed
-                 || ( ! isInputTextActive && ! ImGui::IsWindowFocused() ) )
-            {
-                ImGui::CloseCurrentPopup();
-            }
-            ImGui::EndPopup();
-        }
-        if ( isInputTextPressed )
-        {
-            if ( fs::exists( m_searchBox ) )
-            {
-                this->open_entry( fs::directory_entry { m_searchBox } );
-            }
-        }
-
+        ImGui::PopStyleVar( 2 );
+        this->update_header_bar();
         this->update_table_gui();
+    }
+    else
+    {
+        ImGui::PopStyleVar( 2 );
     }
     ImGui::End();
     ImGui::PopStyleColor();
-    ImGui::PopStyleVar( 2 );
-
-    if ( m_showDemoWindow )
-    {
-        ImGui::ShowDemoWindow( &m_showDemoWindow );
-    }
-    if ( m_showInfoWindow )
-    {
-        information( window );
-    }
-    if ( m_showWindowConfig )
-    {
-        window_configuration( window );
-    }
-    if ( m_showDebugWindow )
-    {
-        this->update_debug();
-    }
 }
 
 void Explorer::change_directory( fs::path const & path )
@@ -268,6 +163,144 @@ void Explorer::change_to_next_dir()
         m_searchBox        = m_currentDirectory;
         m_nextDirectories.pop_back();
     }
+}
+
+void Explorer::update_header_bar()
+{
+    if ( ImGui::Button( "Previous" ) )
+    {
+        this->change_to_previous_dir();
+    }
+    ImGui::SameLine();
+    if ( ImGui::Button( "Next" ) )
+    {
+        this->change_to_next_dir();
+    }
+    ImGui::SameLine();
+    if ( ImGui::Button( "Parent" ) )
+    {
+        this->change_directory( m_currentDirectory.parent_path() );
+    }
+    ImGui::SameLine();
+    if ( ImGui::Button( "Home" ) )
+    {
+        this->change_directory( ds::get_home_directory() );
+    }
+    ImGui::SameLine();
+    this->update_search_box();
+    ImGui::SameLine();
+    if ( ImGui::Button( "Settings##SettingsButton" ) )
+    {
+        m_showSettings = ! m_showSettings;
+    }
+    this->update_settings();
+}
+
+void Explorer::update_search_box()
+{
+    char currentDir[PATH_MAX];
+    std::strcpy( currentDir, m_searchBox.c_str() );
+    ImGui::InputText( "##Current Directory", currentDir, PATH_MAX );
+    m_searchBox = currentDir;
+
+    bool isInputTextPressed {
+        ImGui::IsItemFocused()
+        && ImGui::IsKeyPressed( ImGui::GetKeyIndex( ImGuiKey_Enter ) ) };
+    bool isInputTextActive { ImGui::IsItemActive() };
+
+    if ( ImGui::IsItemActivated() )
+    {
+        ImGui::OpenPopup( "Entry Autocompletion",
+                          ImGuiPopupFlags_NoOpenOverExistingPopup );
+    }
+
+    ImGui::SetNextWindowPos(
+        ImVec2( ImGui::GetItemRectMin().x, ImGui::GetItemRectMax().y ) );
+    if ( ImGui::BeginPopup(
+             "Entry Autocompletion",
+             ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove
+                 | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_ChildWindow ) )
+    {
+        for ( auto const & entry :
+              filter_entry( m_searchBox.parent_path(),
+                            m_searchBox.filename().string(), m_showHidden ) )
+        {
+            if ( ImGui::Selectable( entry.string().c_str() ) )
+            {
+                this->change_directory( entry );
+                ImGui::CloseCurrentPopup();
+            }
+        }
+        if ( isInputTextPressed
+             || ( ! isInputTextActive && ! ImGui::IsWindowFocused() ) )
+        {
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
+    if ( isInputTextPressed )
+    {
+        if ( fs::exists( m_searchBox ) )
+        {
+            this->open_entry( fs::directory_entry { m_searchBox } );
+        }
+    }
+}
+
+void Explorer::update_settings()
+{
+    if ( ! m_showSettings )
+    {
+        return;
+    }
+
+    // position the settings window at the top right of the screen
+    ImGui::SetNextWindowPos(
+        ImVec2(
+            ImGui::GetMainViewport()->Pos.x + ImGui::GetMainViewport()->Size.x
+                - ImGui::GetStyle().WindowPadding.x,
+            ImGui::GetMainViewport()->Pos.y + ImGui::GetStyle().WindowPadding.y
+                + ImGui::GetItemRectMax().y ),
+        ImGuiCond_Always, ImVec2( 1.0f, 0.0f ) );
+    ImGuiWindowFlags settingsFlags =
+        ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize
+        | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoMove
+        | ImGuiWindowFlags_AlwaysAutoResize;
+
+    ImGui::Begin( "Settings", &m_showSettings, settingsFlags );
+
+    if ( ImGui::BeginTabBar( "SettingsTab" ) )
+    {
+        if ( ImGui::BeginTabItem( "Preferences" ) )
+        {
+            ImGui::Checkbox( "Show Hidden Files/Folder", &m_showHidden );
+            ImGui::Checkbox( "Show Demo Window", &m_showDemoWindow );
+            ImGui::EndTabItem();
+        }
+        if ( ImGui::BeginTabItem( "Window" ) )
+        {
+            window_configuration( m_window );
+            ImGui::EndTabItem();
+        }
+        if ( ImGui::BeginTabItem( "Window Informations" ) )
+        {
+            information( m_window );
+            ImGui::EndTabItem();
+        }
+        if ( ImGui::BeginTabItem( "Explorer Informations" ) )
+        {
+            this->update_debug();
+            ImGui::EndTabItem();
+        }
+        ImGui::EndTabBar();
+    }
+
+    if ( m_showDemoWindow )
+    {
+        ImGui::ShowDemoWindow( &m_showDemoWindow );
+    }
+
+    ImGui::End();
 }
 
 void Explorer::update_table_gui()
@@ -375,30 +408,26 @@ void Explorer::update_row_gui( fs::directory_entry entry, int nbColumns,
 
 void Explorer::update_debug()
 {
-    if ( ImGui::Begin( "Explorer Informations", nullptr ) )
-    {
-        ImGui::Text( "Current Directory : %s",
-                     m_currentDirectory.string().c_str() );
+    ImGui::Text( "Current Directory : %s",
+                 m_currentDirectory.string().c_str() );
 
-        // Button to reset previous and next directories
-        if ( ImGui::Button( "Reset Previous/Next Directories" ) )
-        {
-            m_previousDirectories.clear();
-            m_nextDirectories.clear();
-        }
-        ImGui::Text( "Previous Directories :" );
-        for ( auto const & dir : m_previousDirectories )
-        {
-            ImGui::Text( "%s", dir.string().c_str() );
-        }
-        ImGui::Separator();
-        ImGui::Text( "Next Directories :" );
-        for ( auto const & dir : m_nextDirectories )
-        {
-            ImGui::Text( "%s", dir.string().c_str() );
-        }
+    // Button to reset previous and next directories
+    if ( ImGui::Button( "Reset Previous/Next Directories" ) )
+    {
+        m_previousDirectories.clear();
+        m_nextDirectories.clear();
     }
-    ImGui::End();
+    ImGui::Text( "Previous Directories :" );
+    for ( auto const & dir : m_previousDirectories )
+    {
+        ImGui::Text( "%s", dir.string().c_str() );
+    }
+    ImGui::Separator();
+    ImGui::Text( "Next Directories :" );
+    for ( auto const & dir : m_nextDirectories )
+    {
+        ImGui::Text( "%s", dir.string().c_str() );
+    }
 }
 
 void Explorer::add_to_previous_dir( fs::path const & path )

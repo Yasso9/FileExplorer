@@ -9,7 +9,9 @@
 
 #include "app/display.hpp"
 
-Application::Application() : m_window {}, m_shouldRun { true }, m_explorer {} {}
+Application::Application()
+  : m_window {}, m_shouldRun { true }, m_explorer { m_window }
+{}
 
 void Application::update()
 {
@@ -24,7 +26,7 @@ void Application::update()
 
 void Application::update_elements()
 {
-    m_explorer.update( m_window );
+    m_explorer.update();
 }
 
 void Application::should_run( bool should_run )

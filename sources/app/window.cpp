@@ -240,11 +240,16 @@ void Window::reset_imgui_style() const
 
     ImGuiStyle & style = ImGui::GetStyle();
 
-    style.FrameRounding     = 6.f;
-    style.GrabRounding      = 4.f;
-    style.WindowRounding    = 10.f;
-    style.ScrollbarRounding = 12.f;
-    style.PopupRounding     = 6.f;
+    style.WindowPadding     = ImVec2 { 10.f, 10.f };
+    style.FramePadding      = ImVec2 { 10.f, 10.f };
+    style.CellPadding       = ImVec2 { 10.f, 10.f };
+    style.ItemSpacing       = ImVec2 { 10.f, 10.f };
+    style.ItemInnerSpacing  = ImVec2 { 10.f, 10.f };
+    style.TouchExtraPadding = ImVec2 { 0.f, 0.f };
+
+    style.IndentSpacing = 15.f;
+    style.ScrollbarSize = 15.f;
+    style.GrabMinSize   = 15.f;
 
     style.WindowBorderSize = 0.f;
     style.ChildBorderSize  = 0.f;
@@ -252,19 +257,25 @@ void Window::reset_imgui_style() const
     style.PopupBorderSize  = 0.f;
     style.TabBorderSize    = 0.f;
 
-    style.FramePadding  = ImVec2 { 10.f, 7.f };
-    style.ItemSpacing   = ImVec2 { 10.f, 8.f };
-    style.IndentSpacing = 15.f;
-    style.ScrollbarSize = 18.f;
-    style.GrabMinSize   = 18.f;
+    style.WindowRounding    = 6.f;
+    style.ChildRounding     = 6.f;
+    style.FrameRounding     = 6.f;
+    style.PopupRounding     = 6.f;
+    style.ScrollbarRounding = 6.f;
+    style.GrabRounding      = 6.f;
+    style.TabRounding       = 6.f;
 
-    style.CellPadding      = ImVec2 { 10.f, 10.f };
-    style.ItemSpacing      = ImVec2 { 10.f, 8.f };
-    style.ItemInnerSpacing = ImVec2 { 10.f, 8.f };
+    style.WindowTitleAlign         = ImVec2 { 0.5f, 0.5f };
+    style.WindowMenuButtonPosition = ImGuiDir_None;
+    style.ColorButtonPosition      = ImGuiDir_Right;
+    style.ButtonTextAlign          = ImVec2 { 0.5f, 0.5f };
+    style.SelectableTextAlign      = ImVec2 { 0.f, 0.f };
+    style.SeparatorTextBorderSize  = 3.f;
+    style.SeparatorTextAlign       = ImVec2 { 0.5f, 0.5f };
+    style.SeparatorTextPadding     = ImVec2 { 0.5f, 0.5f };
+    style.LogSliderDeadzone        = 0.5f;
 
-    style.SeparatorTextPadding = ImVec2 { 0.f, 20.f };
-
-    style.WindowTitleAlign = ImVec2 { 0.5f, 0.5f };
+    style.DisplaySafeAreaPadding = ImVec2 { 3.f, 3.f };
 
     style.ScaleAllSizes( uiScale );
 }
