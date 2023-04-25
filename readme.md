@@ -1,6 +1,6 @@
-# Minimalist File Explorer
+# File Explorer
 
-Minimalist File Explorer is a simple, lightweight file explorer built using C++, Dear ImGui and GLFW. It provides a minimal, clean interface for browsing files and folders on your computer.
+File Explorer is a simple, lightweight file explorer built using C++, Dear ImGui and GLFW. It provides a minimal, clean interface for browsing files and folders on your computer.
 
 Currently in development. Working with Linux (Gnome)
 
@@ -41,10 +41,15 @@ Currently in development. Working with Linux (Gnome)
 ```
 git clone https://github.com/yourusername/minimalist-file-explorer.git
 cd minimalist-file-explorer
+```
+
+2. Initialize and update submodules:
+
+```
 git submodule update --init --recursive
 ```
 
-2. Create a build directory and generate build files:
+3. Create a build directory and generate build files:
 
 ```
 mkdir build
@@ -52,13 +57,13 @@ cd build
 cmake ..
 ```
 
-3. Compile the project:
+4. Compile the project:
 
 ```
 cmake --build .
 ```
 
-4. Run the executable:
+5. Run the executable:
 
 ```
 ./build/explorer
