@@ -304,8 +304,6 @@ void Explorer::update_table_gui()
     int nbColumns { 3 };
 
     ImGui::PushStyleVar( ImGuiStyleVar_CellPadding, ImVec2 { 0.f, 10.f } );
-    ImGui::PushStyleVar( ImGuiStyleVar_SelectableTextAlign,
-                         ImVec2 { 0.01f, 0.5f } );
     if ( ImGui::BeginTable( "Filesystem Item List", nbColumns, flags ) )
     {
         ImGui::TableSetupColumn( "Name", ImGuiTableColumnFlags_WidthStretch );
@@ -327,7 +325,7 @@ void Explorer::update_table_gui()
             ++row;
         }
     }
-    ImGui::PopStyleVar( 2 );
+    ImGui::PopStyleVar( 1 );
     ImGui::EndTable();
 }
 
