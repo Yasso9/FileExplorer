@@ -37,4 +37,4 @@
 *.app   binary
 
 # Ignore libraries
-submodules linguist-detectable=false
+submodules/** linguist-detectable=false
