@@ -343,7 +343,7 @@ void Explorer::update_row_gui( fs::directory_entry entry, int nbColumns,
             label = entry.path().filename().string();
             break;
         case 1 :
-            label = std::to_string( ds::get_size( entry ) );
+            label = ds::get_size_pretty_print( entry );
             break;
         case 2 :
             label = ds::get_type( entry ).c_str();

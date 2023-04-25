@@ -1,7 +1,9 @@
 #include "filesystem.hpp"
 
 #include <iostream>
+#include <vector>
 
+#include <fmt/core.h>
 #include <imgui/imgui.h>
 
 #include "tools/traces.hpp"
@@ -62,17 +64,53 @@ namespace ds
         return size;
     }
 
+    unsigned int get_nb_files ( fs::path folder )
+    {
+        unsigned int nbFiles = 0;
+
+        for ( const auto & entry : fs::recursive_directory_iterator( folder ) )
+        {
+            if ( entry.is_regular_file() )
+            {
+                ++nbFiles;
+            }
+        }
+
+        return nbFiles;
+    }
+
     uintmax_t get_size ( fs::directory_entry entry )
     {
         if ( entry.is_directory() )
         {
-            // return get_folder_size( entry.path() );
+            Trace::Warning( "get_size() not implemented for directories" );
             return 0;
         }
-        else
+
+        return entry.file_size();
+    }
+
+    std::string get_size_pretty_print ( fs::directory_entry entry )
+    {
+        if ( entry.is_directory() )
         {
-            return entry.file_size();
+            return fmt::format( "{} files", ds::get_nb_files( entry.path() ) );
         }
+
+        static std::vector< std::string > units { "B",  "KB", "MB", "GB", "TB",
+                                                  "PB", "EB", "ZB", "YB" };
+
+        // return the size in Ko, Mo, Go, etc ...
+        uintmax_t size = get_size( entry );
+
+        unsigned int unitIndex = 0;
+        while ( size >= 1024.0 && unitIndex < units.size() )
+        {
+            size /= 1024.0;
+            ++unitIndex;
+        }
+
+        return fmt::format( "{} {}", size, units[unitIndex] );
     }
 
     std::string get_open_command ()

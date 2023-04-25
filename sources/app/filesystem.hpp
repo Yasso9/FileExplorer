@@ -14,8 +14,9 @@ namespace ds
 
     std::string get_type ( fs::directory_entry entry );
 
-    uintmax_t get_folder_size ( fs::path folder );
-    uintmax_t get_size ( fs::directory_entry entry );
+    uintmax_t   get_folder_size ( fs::path folder );
+    uintmax_t   get_size ( fs::directory_entry entry );
+    std::string get_size_pretty_print ( fs::directory_entry entry );
 
     std::string get_open_command ();
     // Open entry with default application
