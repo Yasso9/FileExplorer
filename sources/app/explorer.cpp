@@ -2,9 +2,9 @@
 
 #include <climits>
 #include <iostream>
-#include <optional>
 
 #include <fmt/core.h>
+#include <imgui/imgui_stdlib.h>  // for ImGui::InputText
 
 #include "app/display.hpp"
 #include "tools/string.hpp"
@@ -94,14 +94,12 @@ namespace
 Explorer::Explorer( Window & window )
   : m_window { window },
     m_settings {},
-    m_currentDirectory { ds::get_home_directory() },
-    m_searchBox { m_currentDirectory.string() },
-    m_previousDirectories {},
-    m_nextDirectories {},
-    m_table {},
-    m_nbColumns { 4 }
+    m_tabs {},
+    m_idxTab { std::nullopt },
+    m_showSettings { false },
+    m_showDemoWindow { false }
 {
-    this->update_entries();
+    this->add_tab( ds::get_home_directory() );
 }
 
 void Explorer::update()
@@ -127,130 +125,70 @@ void Explorer::update()
     ImGui::End();
     ImGui::PopStyleColor();
 
-    if ( m_settings.showDemoWindow )
+    if ( m_showDemoWindow )
     {
-        ImGui::ShowDemoWindow( &m_settings.showDemoWindow );
+        ImGui::ShowDemoWindow( &m_showDemoWindow );
     }
 }
 
-void Explorer::update_entries()
+FolderNavigator & Explorer::get_current_tab()
 {
-    // Get all entries to show in the current directory
-    std::vector< fs::directory_entry > entries {};
-    for ( auto const & entry : fs::directory_iterator( m_currentDirectory ) )
+    if ( ! m_idxTab.has_value() )
     {
-        if ( ! ds::is_showed_gui( entry )
-             || ( ! m_settings.showHidden && ds::is_hidden( entry ) ) )
-        {
-            continue;
-        }
-        entries.push_back( entry );
+        Trace::Error( "No tab selected" );
     }
-
-    Trace::Debug( fmt::format( "Number of entries: {}", entries.size() ) );
-
-    m_table.resize( boost::extents[entries.size()][m_nbColumns] );
-    for ( std::size_t row = 0; row < entries.size(); ++row )
-    {
-        Trace::Debug( fmt::format( "row: {}", row ) );
-        Trace::Debug(
-            fmt::format( "Entry: {}", entries[row].path().string() ) );
-        for ( std::size_t column = 0; column < m_nbColumns; column++ )
-        {
-            switch ( column )
-            {
-            case 0 :
-                // Used internally to store the path
-                m_table[row][column] = entries[row].path().string();
-                break;
-            case 1 :
-                m_table[row][column] = entries[row].path().filename().string();
-                break;
-            case 2 :
-                m_table[row][column] =
-                    ds::get_size_pretty_print( entries[row] );
-                break;
-            case 3 :
-                m_table[row][column] = ds::get_type( entries[row] );
-                break;
-            default :
-                m_table[row][column] = "N/A";
-                break;
-            }
-        }
-    }
-    Trace::Debug( "End of update_entries" );
+    return m_tabs[m_idxTab.value()];
 }
 
-void Explorer::change_directory( fs::path const & path )
+void Explorer::add_tab( fs::path const & path )
 {
-    m_previousDirectories.push_back( m_currentDirectory );
-    m_nextDirectories.clear();
-    this->set_current_dir( path );
-}
-
-void Explorer::change_to_previous_dir()
-{
-    if ( ! m_previousDirectories.empty() )
-    {
-        this->add_to_next_dir( m_currentDirectory );
-        this->set_current_dir( m_previousDirectories.back() );
-        m_previousDirectories.pop_back();
-    }
-}
-
-void Explorer::change_to_next_dir()
-{
-    if ( ! m_nextDirectories.empty() )
-    {
-        this->add_to_previous_dir( m_currentDirectory );
-        this->set_current_dir( m_nextDirectories.back() );
-        m_nextDirectories.pop_back();
-    }
+    m_tabs.emplace_back( FolderNavigator { path, m_settings } );
+    m_idxTab = m_tabs.size() - 1;
 }
 
 void Explorer::update_header_bar()
 {
     if ( ImGui::Button( "Previous" ) )
     {
-        this->change_to_previous_dir();
+        this->get_current_tab().change_to_previous_dir();
     }
     ImGui::SameLine();
     if ( ImGui::Button( "Next" ) )
     {
-        this->change_to_next_dir();
+        this->get_current_tab().change_to_next_dir();
     }
     ImGui::SameLine();
     if ( ImGui::Button( "Parent" ) )
     {
-        this->change_directory( m_currentDirectory.parent_path() );
+        // this->change_directory( m_currentDirectory.parent_path() );
+        this->get_current_tab().to_parent_dir();
     }
     ImGui::SameLine();
     if ( ImGui::Button( "Home" ) )
     {
-        this->change_directory( ds::get_home_directory() );
+        this->get_current_tab().change_directory( ds::get_home_directory() );
     }
     ImGui::SameLine();
     this->update_search_box();
     ImGui::SameLine();
     if ( ImGui::Button( "Settings##SettingsButton" ) )
     {
-        m_settings.showSettings = ! m_settings.showSettings;
+        m_showSettings = ! m_showSettings;
     }
     ImGui::SameLine();
     if ( ImGui::Button( "Refresh##RefreshButton" ) )
     {
-        this->update_entries();
+        this->get_current_tab().refresh();
     }
     this->update_settings();
 }
 
 void Explorer::update_search_box()
 {
-    char currentDir[PATH_MAX];
-    std::strcpy( currentDir, m_searchBox.c_str() );
-    ImGui::InputText( "##Current Directory", currentDir, PATH_MAX );
-    m_searchBox = currentDir;
+    std::string searchBoxStr {
+        this->get_current_tab().get_search_box().string() };
+    ImGui::InputText( "##Current Directory", &searchBoxStr );
+    this->get_current_tab().set_search_box( searchBoxStr );
 
     bool isInputTextPressed {
         ImGui::IsItemFocused()
@@ -271,12 +209,13 @@ void Explorer::update_search_box()
                  | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_ChildWindow ) )
     {
         for ( auto const & entry : filter_entry(
-                  m_searchBox.parent_path(), m_searchBox.filename().string(),
+                  this->get_current_tab().get_search_box().parent_path(),
+                  this->get_current_tab().get_search_box().filename().string(),
                   m_settings.showHidden ) )
         {
             if ( ImGui::Selectable( entry.string().c_str() ) )
             {
-                this->change_directory( entry );
+                this->get_current_tab().change_directory( entry );
                 ImGui::CloseCurrentPopup();
             }
         }
@@ -289,16 +228,16 @@ void Explorer::update_search_box()
     }
     if ( isInputTextPressed )
     {
-        if ( fs::exists( m_searchBox ) )
+        if ( fs::exists( this->get_current_tab().get_search_box() ) )
         {
-            this->open_entry( m_searchBox );
+            this->open_entry( this->get_current_tab().get_search_box() );
         }
     }
 }
 
 void Explorer::update_settings()
 {
-    if ( ! m_settings.showSettings )
+    if ( ! m_showSettings )
     {
         return;
     }
@@ -316,7 +255,7 @@ void Explorer::update_settings()
         | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoMove
         | ImGuiWindowFlags_AlwaysAutoResize;
 
-    ImGui::Begin( "Settings", &m_settings.showSettings, settingsFlags );
+    ImGui::Begin( "Settings", &m_showSettings, settingsFlags );
 
     ImGuiTabBarFlags tabBarFlags = ImGuiTabBarFlags_None;
     if ( ImGui::BeginTabBar( "SettingsTab", tabBarFlags ) )
@@ -325,7 +264,7 @@ void Explorer::update_settings()
         {
             ImGui::Checkbox( "Show Hidden Files/Folder",
                              &m_settings.showHidden );
-            ImGui::Checkbox( "Show Demo Window", &m_settings.showDemoWindow );
+            ImGui::Checkbox( "Show Demo Window", &m_showDemoWindow );
             if ( ImGui::Button( "Reset Preferences" ) )
             {
                 m_settings.reset();
@@ -345,7 +284,7 @@ void Explorer::update_settings()
         }
         if ( ImGui::BeginTabItem( "Explorer Informations" ) )
         {
-            this->update_debug();
+            this->get_current_tab().gui_info();
             ImGui::EndTabItem();
         }
         ImGui::EndTabBar();
@@ -374,7 +313,7 @@ void Explorer::update_table_gui()
         std::optional< fs::path > selectedEntry { std::nullopt };
 
         std::size_t idxRow = 0;
-        for ( auto const & row : m_table )
+        for ( auto const & row : this->get_current_tab().get_structure() )
         {
             // Trace::Debug( fmt::format( "Current row: {}", idxRow ) );
             ImGui::TableNextRow( ImGuiTableRowFlags_None );
@@ -422,61 +361,11 @@ void Explorer::update_table_gui()
     ImGui::EndTable();
 }
 
-void Explorer::update_debug()
-{
-    ImGui::Text( "Current Directory : %s",
-                 m_currentDirectory.string().c_str() );
-
-    // Button to reset previous and next directories
-    if ( ImGui::Button( "Reset Previous/Next Directories" ) )
-    {
-        m_previousDirectories.clear();
-        m_nextDirectories.clear();
-    }
-    ImGui::Text( "Previous Directories :" );
-    for ( auto const & dir : m_previousDirectories )
-    {
-        ImGui::Text( "%s", dir.string().c_str() );
-    }
-    ImGui::Separator();
-    ImGui::Text( "Next Directories :" );
-    for ( auto const & dir : m_nextDirectories )
-    {
-        ImGui::Text( "%s", dir.string().c_str() );
-    }
-}
-
-void Explorer::add_to_previous_dir( fs::path const & path )
-{
-    m_previousDirectories.push_back( fs::path { path } );
-    if ( m_previousDirectories.size() > m_settings.maxHistorySize )
-    {
-        m_previousDirectories.erase( m_previousDirectories.begin() );
-    }
-}
-
-void Explorer::add_to_next_dir( fs::path const & path )
-{
-    // todo check if it's necessary to copy the path ?
-    m_nextDirectories.push_back( fs::path { path } );
-    if ( m_nextDirectories.size() > m_settings.maxHistorySize )
-    {
-        m_nextDirectories.erase( m_nextDirectories.begin() );
-    }
-}
-
-void Explorer::set_current_dir( fs::path const & path )
-{
-    m_currentDirectory = path;
-    m_searchBox        = m_currentDirectory;
-    this->update_entries();
-}
-
 void Explorer::open_entry( fs::path const & entry )
 {
     if ( fs::is_directory( entry ) )
     {
-        this->change_directory( entry );
+        this->get_current_tab().change_directory( entry );
     }
     else
     {

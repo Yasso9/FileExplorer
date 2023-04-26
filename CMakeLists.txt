@@ -57,6 +57,8 @@ add_library(imgui STATIC
     ${SUBMODULES_DIR}/imgui/imgui_widgets.cpp
     ${SUBMODULES_DIR}/imgui/backends/imgui_impl_glfw.cpp
     ${SUBMODULES_DIR}/imgui/backends/imgui_impl_opengl3.cpp
+    ${SUBMODULES_DIR}/imgui/misc/cpp/imgui_stdlib.h
+    ${SUBMODULES_DIR}/imgui/misc/cpp/imgui_stdlib.cpp
 )
 target_include_directories(imgui PUBLIC
     ${SUBMODULES_DIR}/include/imgui/
