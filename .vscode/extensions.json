@@ -3,6 +3,8 @@
         "ms-vscode.cpptools",
         "editorconfig.editorconfig",
         "tdennis4496.cmantic",
-        "aaron-bond.better-comments"
+        "aaron-bond.better-comments",
+        "twxs.cmake",
+        "ms-vscode.cmake-tools"
     ]
 }

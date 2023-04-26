@@ -2,7 +2,6 @@
     "configurations": [
         {
             "name": "Linux",
-            "cppStandard": "c++20",
             "configurationProvider": "ms-vscode.cmake-tools"
         }
     ],

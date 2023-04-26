@@ -4,6 +4,10 @@ if(${CMAKE_VERSION} VERSION_LESS 3.12)
     cmake_policy(VERSION ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION})
 endif()
 
+
+
+##################### Project Setup #####################
+
 project(explorer DESCRIPTION "File Explorer using C++"
                 LANGUAGES C CXX)
 
@@ -11,14 +15,35 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(SUBMODULES_DIR "${PROJECT_SOURCE_DIR}/submodules")
 
+set(SOURCES_DIR "${PROJECT_SOURCE_DIR}/sources")
+file(GLOB_RECURSE TPP_FILES "${SOURCES_DIR}/*.tpp")
+file(GLOB_RECURSE SOURCES "${SOURCES_DIR}/*.cpp"
+                            "${SOURCES_DIR}/*.hpp"
+                            TPP_FILES)
+
+# Associate all .tpp files with C++
+foreach(TPP_FILE ${TPP_FILES})
+    set_source_files_properties(${TPP_FILE} PROPERTIES LANGUAGE CXX)
+endforeach()
+
+
+
+##################### Submodules #####################
+
 add_subdirectory(${SUBMODULES_DIR}/fmt)
+
 add_library(glad STATIC
     ${SUBMODULES_DIR}/glad/glad.c
 )
+target_include_directories(glad PUBLIC
+    ${SUBMODULES_DIR}/include/glad
+)
+
 set(GLFW_USE_WAYLAND OFF)
 set(GLFW_BUILD_WAYLAND OFF)
 set(GLFW_BUILD_X11 ON)
 add_subdirectory(${SUBMODULES_DIR}/glfw)
+
 add_library(imgui STATIC
 	${SUBMODULES_DIR}/imgui/imgui.cpp
 	${SUBMODULES_DIR}/imgui/imgui.h
@@ -33,16 +58,15 @@ add_library(imgui STATIC
     ${SUBMODULES_DIR}/imgui/backends/imgui_impl_glfw.cpp
     ${SUBMODULES_DIR}/imgui/backends/imgui_impl_opengl3.cpp
 )
-
-target_include_directories(glad PUBLIC
-    ${SUBMODULES_DIR}/include/glad
-)
 target_include_directories(imgui PUBLIC
-    ${SUBMODULES_DIR}/include/imgui
-    ${SUBMODULES_DIR}/include/glfw
+    ${SUBMODULES_DIR}/include/imgui/
+    ${SUBMODULES_DIR}/glfw/include/
 )
 
-file(GLOB_RECURSE SOURCES "${PROJECT_SOURCE_DIR}/sources/*.cpp")
+
+
+##################### target #####################
+
 add_executable(explorer ${SOURCES})
 
 target_compile_options(explorer PRIVATE -Wall -Wextra -Wpedantic -Werror)

@@ -3,6 +3,10 @@
 #include <iostream>  // for operator<<, basic_ostream, basic_ostream::operat...
 #include <stdlib.h>  // for abort
 
+#include <fmt/core.h>
+
+#include "tools/traces.hpp"
+
 namespace too
 {
     void assertion ( bool const & expression, std::string const & fileName,
@@ -12,12 +16,12 @@ namespace too
     {
         if ( ! expression )
         {
-            std::cerr << "Assertion failed : " << message << "\n"
-                      << "Expected : (" << expressionString << ") == true\n"
-                      << "Source : " << fileName << ":" << line << "\n"
-                      << "Function Call : " << functionName << "\n";
-
-            abort();
+            Trace::Error( fmt::format(
+                "Assertion failed : {}\n"
+                "Expected : ({}) == true\n"
+                "Source : {}:{}\n"
+                "Function Call : {}\n",
+                message, expressionString, fileName, line, functionName ) );
         }
     }
 }  // namespace too
