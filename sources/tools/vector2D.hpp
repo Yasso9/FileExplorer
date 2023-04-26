@@ -16,8 +16,8 @@ class Vector2D
 
   public:
     Vector2D();
-    Vector2D( std::vector< T > array, ImVec2 size );
-    Vector2D( std::vector< std::vector< T > > array );
+    Vector2D( std::vector< T > const & array, ImVec2 size );
+    Vector2D( std::vector< std::vector< T > > const & array );
     virtual ~Vector2D() = default;
 
     ImVec2                   get_size () const;
@@ -33,6 +33,9 @@ class Vector2D
     unsigned int get_length () const;
 
     void set_size ( ImVec2 size, T defaultValue = T {} );
+    void add_row ( std::vector< T > const & row );
+    void remove_row ( unsigned int line );
+    void clear ();
 
     template< typename T2 >
     friend std::ostream & operator<< ( std::ostream &         stream,

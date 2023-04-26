@@ -49,6 +49,7 @@ namespace ds
         }
     }
 
+    // ! Takes too much time (maybe use a thread)
     uintmax_t get_folder_size ( fs::path folder )
     {
         uintmax_t size = 0;
@@ -68,9 +69,9 @@ namespace ds
     {
         unsigned int nbFiles = 0;
 
-        for ( const auto & entry : fs::recursive_directory_iterator( folder ) )
+        for ( const auto & entry : fs::directory_iterator( folder ) )
         {
-            if ( entry.is_regular_file() )
+            if ( ! entry.is_symlink() && entry.is_regular_file() )
             {
                 ++nbFiles;
             }

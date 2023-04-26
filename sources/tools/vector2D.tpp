@@ -24,7 +24,7 @@ Vector2D< T >::Vector2D() : m_array {}, m_size { 0u, 0u }
 {}
 
 template< typename T >
-Vector2D< T >::Vector2D( std::vector< T > array, ImVec2 size )
+Vector2D< T >::Vector2D( std::vector< T > const & array, ImVec2 size )
   : m_array { array }, m_size { size }
 {
     ASSERTION( check_compat( m_array, m_size ),
@@ -32,7 +32,8 @@ Vector2D< T >::Vector2D( std::vector< T > array, ImVec2 size )
 }
 
 template< typename T >
-Vector2D< T >::Vector2D( std::vector< std::vector< T > > array ) : Vector2D {}
+Vector2D< T >::Vector2D( std::vector< std::vector< T > > const & array )
+  : Vector2D {}
 {
     if ( array.empty() )
     {
@@ -170,6 +171,29 @@ void Vector2D< T >::set_size( ImVec2 size, T defaultValue )
     {
         Trace::Error( "Size and Array not comptatible" );
     }
+}
+
+template< typename T >
+void Vector2D< T >::add_row( std::vector< T > const & row )
+{
+    ASSERTION( row.size() == m_size.x, "Row size not compatible" );
+    vector::append( m_array, row );
+}
+
+template< typename T >
+void Vector2D< T >::remove_row( unsigned int line )
+{
+    ASSERTION( line < m_size.y, "Line out of range" );
+    m_array.erase( m_array.begin() + line * m_size.x,
+                   m_array.begin() + ( line + 1 ) * m_size.x );
+    m_size.y--;
+}
+
+template< typename T >
+void Vector2D< T >::clear()
+{
+    m_array.clear();
+    m_size = ImVec2 { 0, 0 };
 }
 
 template< typename T >

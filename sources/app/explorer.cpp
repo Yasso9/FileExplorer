@@ -100,8 +100,12 @@ Explorer::Explorer( Window & window )
     m_currentDirectory { ds::get_home_directory() },
     m_searchBox { m_currentDirectory.string() },
     m_previousDirectories {},
-    m_nextDirectories {}
-{}
+    m_nextDirectories {},
+    m_table {},
+    m_nbColumns { 4 }
+{
+    this->update_entries();
+}
 
 void Explorer::update()
 {
@@ -132,13 +136,54 @@ void Explorer::update()
     }
 }
 
+void Explorer::update_entries()
+{
+    // Get all entries to show in the current directory
+    std::vector< fs::directory_entry > entries {};
+    for ( auto const & entry : fs::directory_iterator( m_currentDirectory ) )
+    {
+        if ( ! ds::is_showed_gui( entry )
+             || ( ! m_showHidden && ds::is_hidden( entry ) ) )
+        {
+            continue;
+        }
+        entries.push_back( entry );
+    }
+
+    m_table.resize( boost::extents[entries.size()][m_nbColumns] );
+    for ( std::size_t row = 0; row < entries.size(); ++row )
+    {
+        for ( std::size_t column = 0; column < m_nbColumns; column++ )
+        {
+            switch ( column )
+            {
+            case 0 :
+                // Used internally to store the path
+                m_table[row][column] = entries[row].path().string();
+                break;
+            case 1 :
+                m_table[row][column] = entries[row].path().filename().string();
+                break;
+            case 2 :
+                m_table[row][column] =
+                    ds::get_size_pretty_print( entries[row] );
+                break;
+            case 3 :
+                m_table[row][column] = ds::get_type( entries[row] ).c_str();
+                break;
+            default :
+                m_table[row][column] = "N/A";
+                break;
+            }
+        }
+    }
+}
+
 void Explorer::change_directory( fs::path const & path )
 {
     m_previousDirectories.push_back( m_currentDirectory );
     m_nextDirectories.clear();
-
-    m_currentDirectory = path;
-    m_searchBox        = m_currentDirectory;
+    this->set_current_dir( path );
 }
 
 void Explorer::change_to_previous_dir()
@@ -146,8 +191,7 @@ void Explorer::change_to_previous_dir()
     if ( ! m_previousDirectories.empty() )
     {
         this->add_to_next_dir( m_currentDirectory );
-        m_currentDirectory = m_previousDirectories.back();
-        m_searchBox        = m_currentDirectory;
+        this->set_current_dir( m_previousDirectories.back() );
         m_previousDirectories.pop_back();
     }
 }
@@ -157,8 +201,7 @@ void Explorer::change_to_next_dir()
     if ( ! m_nextDirectories.empty() )
     {
         this->add_to_previous_dir( m_currentDirectory );
-        m_currentDirectory = m_nextDirectories.back();
-        m_searchBox        = m_currentDirectory;
+        this->set_current_dir( m_nextDirectories.back() );
         m_nextDirectories.pop_back();
     }
 }
@@ -240,7 +283,7 @@ void Explorer::update_search_box()
     {
         if ( fs::exists( m_searchBox ) )
         {
-            this->open_entry( fs::directory_entry { m_searchBox } );
+            this->open_entry( m_searchBox );
         }
     }
 }
@@ -311,64 +354,34 @@ void Explorer::update_table_gui()
         ImGui::TableSetupColumn( "Type", ImGuiTableColumnFlags_WidthFixed );
         ImGui::TableHeadersRow();
 
-        int row { 0 };
-        for ( auto const & entry :
-              fs::directory_iterator( m_currentDirectory ) )
+        for ( std::size_t row = 0; row < m_table.size(); ++row )
         {
-            if ( ! ds::is_showed_gui( entry )
-                 || ( ! m_showHidden && ds::is_hidden( entry ) ) )
+            ImGui::TableNextRow( ImGuiTableRowFlags_None );
+            for ( std::size_t column = 1; column < m_table[row].size();
+                  ++column )
             {
-                continue;
-            }
+                ImGui::TableSetColumnIndex( column - 1 );
 
-            this->update_row_gui( entry, nbColumns, row );
-            ++row;
+                ImGuiSelectableFlags selectable_flags =
+                    ImGuiSelectableFlags_SpanAllColumns;
+                // | ImGuiSelectableFlags_AllowItemOverlap;
+                bool        isSelected { false };
+                std::string id { fmt::format( "{}##{},{}", m_table[row][column],
+                                              column, row ) };
+                ImGui::Selectable( id.c_str(), &isSelected, selectable_flags,
+                                   ImVec2 { 0, 50.f } );
+
+                if ( ImGui::IsItemHovered()
+                     && ImGui::IsMouseDoubleClicked( ImGuiMouseButton_Left ) )
+                {
+                    Trace::Debug( "Double Clicked: " + m_table[row][0] );
+                    this->open_entry( fs::path { m_table[row][0] } );
+                }
+            }
         }
     }
     ImGui::PopStyleVar( 1 );
     ImGui::EndTable();
-}
-
-void Explorer::update_row_gui( fs::directory_entry entry, int nbColumns,
-                               int row )
-{
-    ImGui::TableNextRow( ImGuiTableRowFlags_None );
-    for ( int column = 0; column < nbColumns; column++ )
-    {
-        ImGui::TableSetColumnIndex( column );
-        std::string label { "None" };
-        switch ( column )
-        {
-        case 0 :
-            label = entry.path().filename().string();
-            break;
-        case 1 :
-            label = ds::get_size_pretty_print( entry );
-            break;
-        case 2 :
-            label = ds::get_type( entry ).c_str();
-            break;
-        default :
-            label = "N/A";
-            break;
-        }
-
-        ImGuiSelectableFlags selectable_flags =
-            ImGuiSelectableFlags_SpanAllColumns;
-        // | ImGuiSelectableFlags_AllowItemOverlap;
-        bool        isSelected { false };
-        std::string id { fmt::format( "{}##{},{}", label, column, row ) };
-        ImGui::Selectable( id.c_str(), &isSelected, selectable_flags,
-                           ImVec2 { 0, 50.f } );
-
-        if ( ImGui::IsItemHovered()
-             && ImGui::IsMouseDoubleClicked( ImGuiMouseButton_Left ) )
-        {
-            Trace::Debug( "Double Clicked: "
-                          + entry.path().filename().string() );
-            this->open_entry( entry );
-        }
-    }
 }
 
 void Explorer::update_debug()
@@ -414,14 +427,21 @@ void Explorer::add_to_next_dir( fs::path const & path )
     }
 }
 
-void Explorer::open_entry( fs::directory_entry const & entry )
+void Explorer::set_current_dir( fs::path const & path )
 {
-    if ( entry.is_directory() )
+    m_currentDirectory = path;
+    m_searchBox        = m_currentDirectory;
+    this->update_entries();
+}
+
+void Explorer::open_entry( fs::path const & entry )
+{
+    if ( fs::is_directory( entry ) )
     {
-        this->change_directory( entry.path() );
+        this->change_directory( entry );
     }
     else
     {
-        ds::open( entry.path() );
+        ds::open( entry );
     }
 }
