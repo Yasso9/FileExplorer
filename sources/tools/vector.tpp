@@ -1,4 +1,5 @@
-#pragma once
+#ifndef VECTOR_TPP
+#define VECTOR_TPP
 
 #include "vector.hpp"
 
@@ -60,3 +61,5 @@ namespace vector
         return sameSizeForAllColumn;
     }
 }  // namespace vector
+
+#endif  // VECTOR_TPP

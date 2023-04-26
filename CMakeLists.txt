@@ -15,11 +15,11 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(SUBMODULES_DIR "${PROJECT_SOURCE_DIR}/submodules")
 
-set(SOURCES_DIR "${PROJECT_SOURCE_DIR}/sources")
-file(GLOB_RECURSE TPP_FILES "${SOURCES_DIR}/*.tpp")
-file(GLOB_RECURSE SOURCES "${SOURCES_DIR}/*.cpp"
-                            "${SOURCES_DIR}/*.hpp"
-                            TPP_FILES)
+set(SRC_DIR "${PROJECT_SOURCE_DIR}/sources")
+file(GLOB_RECURSE TPP_FILES "${SRC_DIR}/*.tpp")
+file(GLOB_RECURSE SOURCES "${SRC_DIR}/*.cpp" "${SRC_DIR}/*.hpp")
+# message(STATUS "TPP_FILES: ${TPP_FILES}")
+# message(STATUS "Sources: ${SOURCES}")
 
 # Associate all .tpp files with C++
 foreach(TPP_FILE ${TPP_FILES})
@@ -67,7 +67,7 @@ target_include_directories(imgui PUBLIC
 
 ##################### target #####################
 
-add_executable(explorer ${SOURCES})
+add_executable(explorer ${SOURCES} ${TPP_FILES})
 
 target_compile_options(explorer PRIVATE -Wall -Wextra -Wpedantic -Werror)
 target_link_libraries(explorer PRIVATE fmt glad glfw imgui)

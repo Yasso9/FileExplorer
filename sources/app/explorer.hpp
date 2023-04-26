@@ -6,7 +6,7 @@
 
 #include "app/filesystem.hpp"  // for fs::path
 #include "app/window.hpp"      // for Window
-#include "tools/array2D.hpp"   // for Array2D
+#include "tools/vector2D.hpp"  // for Vector2D
 
 class Explorer
 {

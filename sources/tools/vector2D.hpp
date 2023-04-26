@@ -6,7 +6,7 @@
 #include <imgui/imgui.h>  // for ImVec2
 
 template< typename T >
-class Array2D
+class Vector2D
 {
   protected:
     // One dimensionnal array representing a two dimensionnal array
@@ -15,10 +15,10 @@ class Array2D
     ImVec2           m_size;
 
   public:
-    Array2D();
-    Array2D( std::vector< T > array, ImVec2 size );
-    Array2D( std::vector< std::vector< T > > array );
-    virtual ~Array2D() = default;
+    Vector2D();
+    Vector2D( std::vector< T > array, ImVec2 size );
+    Vector2D( std::vector< std::vector< T > > array );
+    virtual ~Vector2D() = default;
 
     ImVec2                   get_size () const;
     std::vector< T > const & get_data () const;
@@ -35,11 +35,11 @@ class Array2D
     void set_size ( ImVec2 size, T defaultValue = T {} );
 
     template< typename T2 >
-    friend std::ostream & operator<< ( std::ostream &        stream,
-                                       Array2D< T2 > const & array );
+    friend std::ostream & operator<< ( std::ostream &         stream,
+                                       Vector2D< T2 > const & array );
     template< typename T2 >
-    friend std::istream & operator>> ( std::istream &  stream,
-                                       Array2D< T2 > & array );
+    friend std::istream & operator>> ( std::istream &   stream,
+                                       Vector2D< T2 > & array );
 };
 
-#include "array2D.tpp"
+#include "vector2D.tpp"
