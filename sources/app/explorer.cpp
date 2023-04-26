@@ -2,6 +2,7 @@
 
 #include <climits>
 #include <iostream>
+#include <optional>
 
 #include <fmt/core.h>
 
@@ -150,9 +151,14 @@ void Explorer::update_entries()
         entries.push_back( entry );
     }
 
+    Trace::Debug( fmt::format( "Number of entries: {}", entries.size() ) );
+
     m_table.resize( boost::extents[entries.size()][m_nbColumns] );
     for ( std::size_t row = 0; row < entries.size(); ++row )
     {
+        Trace::Debug( fmt::format( "row: {}", row ) );
+        Trace::Debug(
+            fmt::format( "Entry: {}", entries[row].path().string() ) );
         for ( std::size_t column = 0; column < m_nbColumns; column++ )
         {
             switch ( column )
@@ -169,7 +175,7 @@ void Explorer::update_entries()
                     ds::get_size_pretty_print( entries[row] );
                 break;
             case 3 :
-                m_table[row][column] = ds::get_type( entries[row] ).c_str();
+                m_table[row][column] = ds::get_type( entries[row] );
                 break;
             default :
                 m_table[row][column] = "N/A";
@@ -177,6 +183,7 @@ void Explorer::update_entries()
             }
         }
     }
+    Trace::Debug( "End of update_entries" );
 }
 
 void Explorer::change_directory( fs::path const & path )
@@ -233,6 +240,11 @@ void Explorer::update_header_bar()
     if ( ImGui::Button( "Settings##SettingsButton" ) )
     {
         m_showSettings = ! m_showSettings;
+    }
+    ImGui::SameLine();
+    if ( ImGui::Button( "Refresh##RefreshButton" ) )
+    {
+        this->update_entries();
     }
     this->update_settings();
 }
@@ -344,40 +356,64 @@ void Explorer::update_table_gui()
 {
     ImGuiTableFlags flags = ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable
                             | ImGuiTableFlags_NoBordersInBodyUntilResize;
-    int nbColumns { 3 };
 
     ImGui::PushStyleVar( ImGuiStyleVar_CellPadding, ImVec2 { 0.f, 10.f } );
-    if ( ImGui::BeginTable( "Filesystem Item List", nbColumns, flags ) )
+    if ( ImGui::BeginTable( "Filesystem Item List", 3, flags ) )
     {
         ImGui::TableSetupColumn( "Name", ImGuiTableColumnFlags_WidthStretch );
         ImGui::TableSetupColumn( "Size", ImGuiTableColumnFlags_WidthFixed );
         ImGui::TableSetupColumn( "Type", ImGuiTableColumnFlags_WidthFixed );
         ImGui::TableHeadersRow();
 
-        for ( std::size_t row = 0; row < m_table.size(); ++row )
+        // Trace::Debug( fmt::format( "Table Size: {} {}",
+        //                            m_currentDirectory.string(),
+        //                            m_table.size() ) );
+
+        std::optional< fs::path > selectedEntry { std::nullopt };
+
+        std::size_t idxRow = 0;
+        for ( auto const & row : m_table )
         {
+            // Trace::Debug( fmt::format( "Current row: {}", idxRow ) );
             ImGui::TableNextRow( ImGuiTableRowFlags_None );
-            for ( std::size_t column = 1; column < m_table[row].size();
-                  ++column )
+
+            std::size_t idxColumn = 0;
+            for ( std::string const & cell : row )
             {
-                ImGui::TableSetColumnIndex( column - 1 );
+                if ( idxColumn == 0 )
+                {
+                    ++idxColumn;
+                    continue;
+                }
+
+                ImGui::TableSetColumnIndex( idxColumn - 1 );
 
                 ImGuiSelectableFlags selectable_flags =
                     ImGuiSelectableFlags_SpanAllColumns;
                 // | ImGuiSelectableFlags_AllowItemOverlap;
                 bool        isSelected { false };
-                std::string id { fmt::format( "{}##{},{}", m_table[row][column],
-                                              column, row ) };
+                std::string id {
+                    fmt::format( "{}##Cell{}-{}", cell, idxColumn, idxRow ) };
                 ImGui::Selectable( id.c_str(), &isSelected, selectable_flags,
                                    ImVec2 { 0, 50.f } );
 
                 if ( ImGui::IsItemHovered()
                      && ImGui::IsMouseDoubleClicked( ImGuiMouseButton_Left ) )
                 {
-                    Trace::Debug( "Double Clicked: " + m_table[row][0] );
-                    this->open_entry( fs::path { m_table[row][0] } );
+                    Trace::Debug( "Double Clicked: " + row[0] );
+                    selectedEntry = fs::path { row[0] };
+                    break;
                 }
+                ++idxColumn;
             }
+            ++idxRow;
+        }
+
+        // Open the selected entry after the loop because we can't modify the
+        // table while iterating over it
+        if ( selectedEntry.has_value() )
+        {
+            this->open_entry( selectedEntry.value() );
         }
     }
     ImGui::PopStyleVar( 1 );
