@@ -1,0 +1,43 @@
+#pragma once
+
+#include <vector>  // for vector
+
+#include <imgui/imgui.h>  // for ImVec2
+
+template< typename T >
+class Array2D
+{
+  protected:
+    std::vector< T > m_array;
+    // x : index of columns, y : index of lines
+    ImVec2           m_size;
+
+  public:
+    Array2D();
+    Array2D( std::vector< T > array, ImVec2 size );
+    Array2D( std::vector< std::vector< T > > array );
+    virtual ~Array2D() = default;
+
+    ImVec2                   get_size () const;
+    std::vector< T > const & get_raw_array () const;
+    T const & get_element ( unsigned int column, unsigned int line ) const;
+    T &       get_element ( unsigned int column, unsigned int line );
+
+    ImVec2       get_position ( unsigned int index ) const;
+    unsigned int get_index ( unsigned int column, unsigned int line ) const;
+    unsigned int get_last_index () const;
+
+    std::vector< T > operator[] ( unsigned int line ) const;
+    std::vector< T > get_row ( unsigned int line ) const;
+
+    void set_size ( ImVec2 size, T defaultValue = T {} );
+
+    template< typename TypeBis >
+    friend std::ostream & operator<< ( std::ostream &             stream,
+                                       Array2D< TypeBis > const & array );
+    template< typename TypeBis >
+    friend std::istream & operator>> ( std::istream &       stream,
+                                       Array2D< TypeBis > & array );
+};
+
+#include "array2D.tpp"
