@@ -27,6 +27,7 @@ class Explorer
     void              update ();
     FolderNavigator & get_current_tab ();
     void              add_tab ( fs::path const & path );
+    void              remove_tab ( unsigned int idx );
 
   private:
     void update_header_bar ();

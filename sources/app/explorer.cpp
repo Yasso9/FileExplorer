@@ -1,5 +1,6 @@
 #include "explorer.hpp"
 
+#include <algorithm>
 #include <climits>
 #include <iostream>
 
@@ -116,7 +117,46 @@ void Explorer::update()
     {
         ImGui::PopStyleVar( 2 );
         this->update_header_bar();
-        this->update_table_gui();
+
+        ImGuiTabBarFlags tabBarFlags =
+            ImGuiTabBarFlags_Reorderable | ImGuiTabBarFlags_TabListPopupButton;
+        if ( ImGui::BeginTabBar( "ExplorerTab", tabBarFlags ) )
+        {
+            if ( ImGui::TabItemButton( "+",
+                                       ImGuiTabItemFlags_Trailing
+                                           | ImGuiTabItemFlags_NoTooltip ) )
+            {
+                Trace::Debug( "Add tab" );
+                this->add_tab( ds::get_home_directory() );
+            }
+
+            std::optional< std::size_t > idxTabToRemove = std::nullopt;
+            for ( std::size_t i = 0; i < m_tabs.size(); ++i )
+            {
+                ImGuiTabItemFlags tabItemFlags = ImGuiTabItemFlags_None;
+                bool              isOpen       = true;
+                std::string       label        = fmt::format(
+                    "{}##{}", m_tabs[i].get_directory().filename().string(),
+                    i );
+                if ( ImGui::BeginTabItem( label.c_str(), &isOpen,
+                                          tabItemFlags ) )
+                {
+                    this->update_table_gui();
+                    ImGui::EndTabItem();
+                }
+                if ( ! isOpen && m_idxTab == i && m_tabs.size() > 1 )
+                {
+                    idxTabToRemove = i;
+                }
+            }
+            if ( idxTabToRemove.has_value() )
+            {
+                Trace::Debug( "Remove tab" );
+                this->remove_tab( idxTabToRemove.value() );
+            }
+
+            ImGui::EndTabBar();
+        }
     }
     else
     {
@@ -142,8 +182,36 @@ FolderNavigator & Explorer::get_current_tab()
 
 void Explorer::add_tab( fs::path const & path )
 {
-    m_tabs.emplace_back( FolderNavigator { path, m_settings } );
-    m_idxTab = m_tabs.size() - 1;
+    // m_tabs.emplace_back( FolderNavigator { path, m_settings } );
+    m_tabs.push_back( FolderNavigator { path, m_settings } );
+    if ( ! m_idxTab.has_value() )
+    {
+        m_idxTab = m_tabs.size() - 1;
+    }
+
+    // m_tabs size
+    Trace::Debug( fmt::format( "m_tabs size: {}", m_tabs.size() ) );
+}
+
+void Explorer::remove_tab( unsigned int idx )
+{
+    if ( idx >= m_tabs.size() )
+    {
+        Trace::Error( "Invalid tab index" );
+    }
+
+    m_tabs.erase( m_tabs.begin() + idx );
+
+    if ( m_tabs.empty() )
+    {
+        m_idxTab = std::nullopt;
+    }
+    else if ( m_idxTab >= idx )
+    {
+        m_idxTab = m_idxTab.value() - 1;
+    }
+
+    Trace::Debug( fmt::format( "idx after rm: {}", m_idxTab.value() ) );
 }
 
 void Explorer::update_header_bar()

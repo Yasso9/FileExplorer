@@ -4,7 +4,7 @@
 
 FolderNavigator::FolderNavigator( fs::path const &         baseDirectory,
                                   ExplorerSettings const & settings )
-  : m_settings { settings },
+  : m_settings { &settings },
     m_currentDirectory { baseDirectory },
     m_searchBox { m_currentDirectory },
     m_previousDirectories {},
@@ -94,7 +94,7 @@ void FolderNavigator::refresh()
     for ( auto const & entry : fs::directory_iterator( this->get_directory() ) )
     {
         if ( ! ds::is_showed_gui( entry )
-             || ( ! m_settings.showHidden && ds::is_hidden( entry ) ) )
+             || ( ! m_settings->showHidden && ds::is_hidden( entry ) ) )
         {
             continue;
         }
@@ -157,7 +157,7 @@ void FolderNavigator::gui_info()
 void FolderNavigator::add_to_previous_dir( fs::path const & path )
 {
     m_previousDirectories.push_back( fs::path { path } );
-    if ( m_previousDirectories.size() > m_settings.maxHistorySize )
+    if ( m_previousDirectories.size() > m_settings->maxHistorySize )
     {
         m_previousDirectories.erase( m_previousDirectories.begin() );
     }
@@ -167,7 +167,7 @@ void FolderNavigator::add_to_next_dir( fs::path const & path )
 {
     // todo check if it's necessary to copy the path ?
     m_nextDirectories.push_back( fs::path { path } );
-    if ( m_nextDirectories.size() > m_settings.maxHistorySize )
+    if ( m_nextDirectories.size() > m_settings->maxHistorySize )
     {
         m_nextDirectories.erase( m_nextDirectories.begin() );
     }

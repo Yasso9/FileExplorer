@@ -9,7 +9,8 @@
 
 class FolderNavigator
 {
-    ExplorerSettings const & m_settings;
+    // Pointer because we need move assignment operator
+    ExplorerSettings const * m_settings;
 
     fs::path m_currentDirectory;
     fs::path m_searchBox;
@@ -23,7 +24,11 @@ class FolderNavigator
   public:
     FolderNavigator( fs::path const &         baseDirectory,
                      ExplorerSettings const & settings );
-    virtual ~FolderNavigator() = default;
+    virtual ~FolderNavigator()                              = default;
+    FolderNavigator( FolderNavigator const & )              = default;
+    FolderNavigator( FolderNavigator && )                   = default;
+    FolderNavigator & operator= ( FolderNavigator const & ) = default;
+    FolderNavigator & operator= ( FolderNavigator && )      = default;
 
     fs::path const &                get_directory () const;
     fs::path const &                get_search_box () const;
