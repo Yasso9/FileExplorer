@@ -30,6 +30,7 @@ endforeach()
 
 ##################### Submodules #####################
 
+find_package(Boost REQUIRED)
 add_subdirectory(${SUBMODULES_DIR}/fmt)
 
 add_library(glad STATIC
@@ -60,6 +61,7 @@ add_library(imgui STATIC
     ${SUBMODULES_DIR}/imgui/misc/cpp/imgui_stdlib.h
     ${SUBMODULES_DIR}/imgui/misc/cpp/imgui_stdlib.cpp
 )
+
 target_include_directories(imgui PUBLIC
     ${SUBMODULES_DIR}/include/imgui/
     ${SUBMODULES_DIR}/glfw/include/
@@ -74,7 +76,8 @@ add_executable(explorer ${SOURCES} ${TPP_FILES})
 target_compile_options(explorer PRIVATE -Wall -Wextra -Wpedantic -Werror)
 target_link_libraries(explorer PRIVATE fmt glad glfw imgui)
 
-target_include_directories(explorer PUBLIC
+target_include_directories(explorer PRIVATE
+    ${Boost_INCLUDE_DIRS}
     ${SUBMODULES_DIR}/include
     ${PROJECT_SOURCE_DIR}/sources
 )
