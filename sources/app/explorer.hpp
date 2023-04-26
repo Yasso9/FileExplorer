@@ -10,15 +10,33 @@
 
 class Explorer
 {
+  public:
+    struct Settings
+    {
+        bool         showSettings;
+        bool         showDemoWindow;
+        bool         showHidden;
+        bool         showDebugWindow;
+        ImVec4       backgroundColor;
+        unsigned int maxHistorySize;
+
+        Settings() { this->reset(); }
+
+        void reset ()
+        {
+            showSettings    = false;
+            showDemoWindow  = false;
+            showHidden      = false;
+            showDebugWindow = false;
+            backgroundColor = ImVec4( 0.2f, 0.2f, 0.2f, 1.f );
+            maxHistorySize  = 15u;
+        }
+    };
+
+  private:
     Window & m_window;
 
-    // todo put these attributes in a config struct
-    bool         m_showSettings;
-    bool         m_showDemoWindow;
-    bool         m_showHidden;
-    bool         m_showDebugWindow;
-    ImVec4       m_backgroundColor;
-    unsigned int m_maxHistorySize;
+    Settings m_settings;
 
     fs::path m_currentDirectory;
     fs::path m_searchBox;

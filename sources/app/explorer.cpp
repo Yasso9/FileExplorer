@@ -93,11 +93,7 @@ namespace
 
 Explorer::Explorer( Window & window )
   : m_window { window },
-    m_showSettings { false },
-    m_showDemoWindow { false },
-    m_showHidden { false },
-    m_backgroundColor { 0.2f, 0.2f, 0.2f, 1.f },
-    m_maxHistorySize { 15 },
+    m_settings {},
     m_currentDirectory { ds::get_home_directory() },
     m_searchBox { m_currentDirectory.string() },
     m_previousDirectories {},
@@ -115,7 +111,7 @@ void Explorer::update()
                                        | ImGuiWindowFlags_NoBringToFrontOnFocus;
     ImGui::SetNextWindowPos( ImGui::GetMainViewport()->Pos );
     ImGui::SetNextWindowSize( ImGui::GetMainViewport()->Size );
-    ImGui::PushStyleColor( ImGuiCol_WindowBg, m_backgroundColor );
+    ImGui::PushStyleColor( ImGuiCol_WindowBg, m_settings.backgroundColor );
     ImGui::PushStyleVar( ImGuiStyleVar_WindowRounding, 0.0f );
     ImGui::PushStyleVar( ImGuiStyleVar_WindowBorderSize, 0.0f );
     if ( ImGui::Begin( "File Explorer", nullptr, fullScreenflags ) )
@@ -131,9 +127,9 @@ void Explorer::update()
     ImGui::End();
     ImGui::PopStyleColor();
 
-    if ( m_showDemoWindow )
+    if ( m_settings.showDemoWindow )
     {
-        ImGui::ShowDemoWindow( &m_showDemoWindow );
+        ImGui::ShowDemoWindow( &m_settings.showDemoWindow );
     }
 }
 
@@ -144,7 +140,7 @@ void Explorer::update_entries()
     for ( auto const & entry : fs::directory_iterator( m_currentDirectory ) )
     {
         if ( ! ds::is_showed_gui( entry )
-             || ( ! m_showHidden && ds::is_hidden( entry ) ) )
+             || ( ! m_settings.showHidden && ds::is_hidden( entry ) ) )
         {
             continue;
         }
@@ -239,7 +235,7 @@ void Explorer::update_header_bar()
     ImGui::SameLine();
     if ( ImGui::Button( "Settings##SettingsButton" ) )
     {
-        m_showSettings = ! m_showSettings;
+        m_settings.showSettings = ! m_settings.showSettings;
     }
     ImGui::SameLine();
     if ( ImGui::Button( "Refresh##RefreshButton" ) )
@@ -274,9 +270,9 @@ void Explorer::update_search_box()
              ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove
                  | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_ChildWindow ) )
     {
-        for ( auto const & entry :
-              filter_entry( m_searchBox.parent_path(),
-                            m_searchBox.filename().string(), m_showHidden ) )
+        for ( auto const & entry : filter_entry(
+                  m_searchBox.parent_path(), m_searchBox.filename().string(),
+                  m_settings.showHidden ) )
         {
             if ( ImGui::Selectable( entry.string().c_str() ) )
             {
@@ -302,7 +298,7 @@ void Explorer::update_search_box()
 
 void Explorer::update_settings()
 {
-    if ( ! m_showSettings )
+    if ( ! m_settings.showSettings )
     {
         return;
     }
@@ -320,15 +316,21 @@ void Explorer::update_settings()
         | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoMove
         | ImGuiWindowFlags_AlwaysAutoResize;
 
-    ImGui::Begin( "Settings", &m_showSettings, settingsFlags );
+    ImGui::Begin( "Settings", &m_settings.showSettings, settingsFlags );
 
     ImGuiTabBarFlags tabBarFlags = ImGuiTabBarFlags_None;
     if ( ImGui::BeginTabBar( "SettingsTab", tabBarFlags ) )
     {
         if ( ImGui::BeginTabItem( "Preferences" ) )
         {
-            ImGui::Checkbox( "Show Hidden Files/Folder", &m_showHidden );
-            ImGui::Checkbox( "Show Demo Window", &m_showDemoWindow );
+            ImGui::Checkbox( "Show Hidden Files/Folder",
+                             &m_settings.showHidden );
+            ImGui::Checkbox( "Show Demo Window", &m_settings.showDemoWindow );
+            if ( ImGui::Button( "Reset Preferences" ) )
+            {
+                m_settings.reset();
+            }
+
             ImGui::EndTabItem();
         }
         if ( ImGui::BeginTabItem( "Window" ) )
@@ -447,7 +449,7 @@ void Explorer::update_debug()
 void Explorer::add_to_previous_dir( fs::path const & path )
 {
     m_previousDirectories.push_back( fs::path { path } );
-    if ( m_previousDirectories.size() > m_maxHistorySize )
+    if ( m_previousDirectories.size() > m_settings.maxHistorySize )
     {
         m_previousDirectories.erase( m_previousDirectories.begin() );
     }
@@ -457,7 +459,7 @@ void Explorer::add_to_next_dir( fs::path const & path )
 {
     // todo check if it's necessary to copy the path ?
     m_nextDirectories.push_back( fs::path { path } );
-    if ( m_nextDirectories.size() > m_maxHistorySize )
+    if ( m_nextDirectories.size() > m_settings.maxHistorySize )
     {
         m_nextDirectories.erase( m_nextDirectories.begin() );
     }
