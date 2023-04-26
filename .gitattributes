@@ -38,3 +38,6 @@
 
 # Ignore libraries
 submodules/** linguist-detectable=false
+
+# Force LF line endings
+* text=auto eol=lf
