@@ -1,18 +1,91 @@
 #include "folder_navigator.hpp"
 
+#include <optional>  // for optional
+
+#include <fmt/format.h>   // for format
 #include <imgui/imgui.h>  // for ImGui::Text, ImGui::Begin, ImGui::End
 
-FolderNavigator::FolderNavigator( fs::path const &         baseDirectory,
-                                  ExplorerSettings const & settings )
-  : m_settings { &settings },
-    m_currentDirectory { baseDirectory },
+#include "app/explorer_settings.hpp"  // for ExplorerSettings
+#include "tools/traces.hpp"           // for Trace
+
+FolderNavigator::FolderNavigator( fs::path const & baseDirectory )
+  : m_currentDirectory { baseDirectory },
     m_searchBox { m_currentDirectory },
     m_previousDirectories {},
     m_nextDirectories {},
     m_structure {},
+    // todo have a subclass that handle the number of columns and columns names
     m_nbColumns { 4 }
 {
     this->refresh();
+}
+
+void FolderNavigator::update_gui()
+{
+    ImGuiTableFlags flags = ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable
+                            | ImGuiTableFlags_NoBordersInBodyUntilResize;
+
+    ImGui::PushStyleVar( ImGuiStyleVar_CellPadding, ImVec2 { 0.f, 10.f } );
+    if ( ImGui::BeginTable( "Filesystem Item List", 3, flags ) )
+    {
+        ImGui::TableSetupColumn( "Name", ImGuiTableColumnFlags_WidthStretch );
+        ImGui::TableSetupColumn( "Size", ImGuiTableColumnFlags_WidthFixed );
+        ImGui::TableSetupColumn( "Type", ImGuiTableColumnFlags_WidthFixed );
+        ImGui::TableHeadersRow();
+
+        // Trace::Debug( fmt::format( "Table Size: {} {}",
+        //                            m_currentDirectory.string(),
+        //                            m_table.size() ) );
+
+        std::optional< fs::path > selectedEntry { std::nullopt };
+
+        std::size_t idxRow = 0;
+        for ( auto const & row : this->get_structure() )
+        {
+            // Trace::Debug( fmt::format( "Current row: {}", idxRow ) );
+            ImGui::TableNextRow( ImGuiTableRowFlags_None );
+
+            std::size_t idxColumn = 0;
+            for ( std::string const & cell : row )
+            {
+                if ( idxColumn == 0 )
+                {
+                    ++idxColumn;
+                    continue;
+                }
+
+                ImGui::TableSetColumnIndex( idxColumn - 1 );
+
+                ImGuiSelectableFlags selectable_flags =
+                    ImGuiSelectableFlags_SpanAllColumns;
+                // | ImGuiSelectableFlags_AllowItemOverlap;
+                bool        isSelected { false };
+                std::string id {
+                    fmt::format( "{}##Cell{}-{}", cell, idxColumn, idxRow ) };
+                ImGui::Selectable( id.c_str(), &isSelected, selectable_flags,
+                                   ImVec2 { 0, 50.f } );
+
+                if ( ImGui::IsItemHovered()
+                     && ImGui::IsMouseDoubleClicked( ImGuiMouseButton_Left ) )
+                {
+                    Trace::Debug( "Double Clicked: " + row[0] );
+                    selectedEntry = fs::path { row[0] };
+                    break;
+                }
+                ++idxColumn;
+            }
+            ++idxRow;
+        }
+
+        // Open the selected entry after the loop because we can't modify the
+        // table while iterating over it
+        if ( selectedEntry.has_value() )
+        {
+            this->open_entry( selectedEntry.value() );
+        }
+    }
+    ImGui::PopStyleVar( 1 );
+    ImGui::EndTable();
 }
 
 fs::path const & FolderNavigator::get_directory() const
@@ -94,7 +167,8 @@ void FolderNavigator::refresh()
     for ( auto const & entry : fs::directory_iterator( this->get_directory() ) )
     {
         if ( ! ds::is_showed_gui( entry )
-             || ( ! m_settings->showHidden && ds::is_hidden( entry ) ) )
+             || ( ! Settings::get_instance().showHidden
+                  && ds::is_hidden( entry ) ) )
         {
             continue;
         }
@@ -154,10 +228,23 @@ void FolderNavigator::gui_info()
     }
 }
 
+void FolderNavigator::open_entry( fs::path const & entry )
+{
+    if ( fs::is_directory( entry ) )
+    {
+        this->change_directory( entry );
+    }
+    else
+    {
+        ds::open( entry );
+    }
+}
+
 void FolderNavigator::add_to_previous_dir( fs::path const & path )
 {
     m_previousDirectories.push_back( fs::path { path } );
-    if ( m_previousDirectories.size() > m_settings->maxHistorySize )
+    if ( m_previousDirectories.size()
+         > Settings::get_instance().maxHistorySize )
     {
         m_previousDirectories.erase( m_previousDirectories.begin() );
     }
@@ -167,7 +254,7 @@ void FolderNavigator::add_to_next_dir( fs::path const & path )
 {
     // todo check if it's necessary to copy the path ?
     m_nextDirectories.push_back( fs::path { path } );
-    if ( m_nextDirectories.size() > m_settings->maxHistorySize )
+    if ( m_nextDirectories.size() > Settings::get_instance().maxHistorySize )
     {
         m_nextDirectories.erase( m_nextDirectories.begin() );
     }

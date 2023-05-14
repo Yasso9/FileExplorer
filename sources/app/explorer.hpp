@@ -6,16 +6,28 @@
 #include "app/folder_navigator.hpp"   // for FolderNavigator
 #include "app/window.hpp"             // for Window
 
-class Explorer
+class TabNavigator
 {
-  public:
-
-  private:
-    Window &         m_window;
-    ExplorerSettings m_settings;
-
     std::vector< FolderNavigator > m_tabs;
     std::optional< unsigned int >  m_idxTab;
+
+  public:
+    TabNavigator();
+    virtual ~TabNavigator() = default;
+
+    void update_gui ();
+    void debug_gui ();
+
+    FolderNavigator & get_current ();
+    void              add ( fs::path const & path, bool changeCurrent );
+    void              remove ( unsigned int idx );
+    void              set_current ( unsigned int idx );
+};
+
+class Explorer
+{
+    Window &     m_window;
+    TabNavigator m_tabNavigator;
 
     bool m_showSettings;
     bool m_showDemoWindow;
@@ -24,16 +36,10 @@ class Explorer
     Explorer( Window & window );
     virtual ~Explorer() = default;
 
-    void              update ();
-    FolderNavigator & get_current_tab ();
-    void              add_tab ( fs::path const & path );
-    void              remove_tab ( unsigned int idx );
+    void update ();
 
   private:
     void update_header_bar ();
     void update_search_box ();
-    void update_table_gui ();
     void update_settings ();
-
-    void open_entry ( fs::path const & entry );
 };

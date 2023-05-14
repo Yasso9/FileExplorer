@@ -4,14 +4,10 @@
 
 #include <boost/multi_array.hpp>  // for multi_array
 
-#include "app/explorer_settings.hpp"  // for ExplorerSettings
-#include "app/filesystem.hpp"         // for fs::path
+#include "app/filesystem.hpp"  // for fs::path
 
 class FolderNavigator
 {
-    // Pointer because we need move assignment operator
-    ExplorerSettings const * m_settings;
-
     fs::path m_currentDirectory;
     fs::path m_searchBox;
 
@@ -22,13 +18,14 @@ class FolderNavigator
     unsigned int                         m_nbColumns;
 
   public:
-    FolderNavigator( fs::path const &         baseDirectory,
-                     ExplorerSettings const & settings );
+    explicit FolderNavigator( fs::path const & baseDirectory );
     virtual ~FolderNavigator()                              = default;
     FolderNavigator( FolderNavigator const & )              = default;
     FolderNavigator( FolderNavigator && )                   = default;
     FolderNavigator & operator= ( FolderNavigator const & ) = default;
     FolderNavigator & operator= ( FolderNavigator && )      = default;
+
+    void update_gui ();
 
     fs::path const &                get_directory () const;
     fs::path const &                get_search_box () const;
@@ -45,6 +42,7 @@ class FolderNavigator
 
     void refresh ();
     void gui_info ();
+    void open_entry ( fs::path const & entry );
 
   private:
     void add_to_previous_dir ( fs::path const & path );

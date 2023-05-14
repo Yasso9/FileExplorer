@@ -1,5 +1,5 @@
 # Setting the minimum version of CMake
-cmake_minimum_required(VERSION 3.7...3.26)
+cmake_minimum_required(VERSION 3.10...3.26)
 if(${CMAKE_VERSION} VERSION_LESS 3.12)
     cmake_policy(VERSION ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION})
 endif()
@@ -16,15 +16,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(SUBMODULES_DIR "${PROJECT_SOURCE_DIR}/submodules")
 
 set(SRC_DIR "${PROJECT_SOURCE_DIR}/sources")
-file(GLOB_RECURSE TPP_FILES "${SRC_DIR}/*.tpp")
 file(GLOB_RECURSE SOURCES "${SRC_DIR}/*.cpp" "${SRC_DIR}/*.hpp")
-# message(STATUS "TPP_FILES: ${TPP_FILES}")
-# message(STATUS "Sources: ${SOURCES}")
-
-# Associate all .tpp files with C++
-foreach(TPP_FILE ${TPP_FILES})
-    set_source_files_properties(${TPP_FILE} PROPERTIES LANGUAGE CXX)
-endforeach()
 
 
 

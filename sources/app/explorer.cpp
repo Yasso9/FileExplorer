@@ -92,86 +92,74 @@ namespace
     }
 }  // namespace
 
-Explorer::Explorer( Window & window )
-  : m_window { window },
-    m_settings {},
-    m_tabs {},
-    m_idxTab { std::nullopt },
-    m_showSettings { false },
-    m_showDemoWindow { false }
+TabNavigator::TabNavigator() : m_tabs {}, m_idxTab { std::nullopt } {}
+
+void TabNavigator::update_gui()
 {
-    this->add_tab( ds::get_home_directory() );
+    ImGuiTabBarFlags tabBarFlags =
+        ImGuiTabBarFlags_Reorderable | ImGuiTabBarFlags_TabListPopupButton;
+    if ( ImGui::BeginTabBar( "ExplorerTab", tabBarFlags ) )
+    {
+        if ( ImGui::TabItemButton( "+", ImGuiTabItemFlags_Trailing
+                                            | ImGuiTabItemFlags_NoTooltip ) )
+        {
+            Trace::Debug( "Add tab" );
+            this->add( ds::get_home_directory(), true );
+        }
+
+        std::optional< std::size_t > idxTabToRemove = std::nullopt;
+        for ( std::size_t idx = 0; idx < m_tabs.size(); ++idx )
+        {
+            ImGuiTabItemFlags tabItemFlags = ImGuiTabItemFlags_None;
+            if ( m_idxTab.value() == idx )
+            {
+                tabItemFlags |= ImGuiTabItemFlags_SetSelected;
+            }
+            bool        isOpen = true;
+            std::string label  = fmt::format(
+                "{}##{}", m_tabs[idx].get_directory().filename().string(),
+                idx );
+            if ( ImGui::BeginTabItem( label.c_str(), &isOpen, tabItemFlags ) )
+            {
+                if ( m_idxTab.value() != idx )
+                {
+                    Trace::Debug( "Change tab :" + idx );
+                    this->set_current( idx );
+                }
+                m_tabs[idx].update_gui();
+                // this->get_current().update_gui();
+                ImGui::EndTabItem();
+            }
+            if ( ! isOpen && m_tabs.size() > 1 )
+            {
+                idxTabToRemove = idx;
+            }
+        }
+        if ( idxTabToRemove.has_value() )
+        {
+            Trace::Debug( "Remove tab" );
+            this->remove( idxTabToRemove.value() );
+        }
+
+        ImGui::EndTabBar();
+    }
 }
 
-void Explorer::update()
+void TabNavigator::debug_gui()
 {
-    ImGuiWindowFlags fullScreenflags = ImGuiWindowFlags_NoDecoration
-                                       | ImGuiWindowFlags_NoMove
-                                       | ImGuiWindowFlags_NoBringToFrontOnFocus;
-    ImGui::SetNextWindowPos( ImGui::GetMainViewport()->Pos );
-    ImGui::SetNextWindowSize( ImGui::GetMainViewport()->Size );
-    ImGui::PushStyleColor( ImGuiCol_WindowBg, m_settings.backgroundColor );
-    ImGui::PushStyleVar( ImGuiStyleVar_WindowRounding, 0.0f );
-    ImGui::PushStyleVar( ImGuiStyleVar_WindowBorderSize, 0.0f );
-    if ( ImGui::Begin( "File Explorer", nullptr, fullScreenflags ) )
+    if ( m_idxTab.has_value() )
     {
-        ImGui::PopStyleVar( 2 );
-        this->update_header_bar();
-
-        ImGuiTabBarFlags tabBarFlags =
-            ImGuiTabBarFlags_Reorderable | ImGuiTabBarFlags_TabListPopupButton;
-        if ( ImGui::BeginTabBar( "ExplorerTab", tabBarFlags ) )
-        {
-            if ( ImGui::TabItemButton( "+",
-                                       ImGuiTabItemFlags_Trailing
-                                           | ImGuiTabItemFlags_NoTooltip ) )
-            {
-                Trace::Debug( "Add tab" );
-                this->add_tab( ds::get_home_directory() );
-            }
-
-            std::optional< std::size_t > idxTabToRemove = std::nullopt;
-            for ( std::size_t i = 0; i < m_tabs.size(); ++i )
-            {
-                ImGuiTabItemFlags tabItemFlags = ImGuiTabItemFlags_None;
-                bool              isOpen       = true;
-                std::string       label        = fmt::format(
-                    "{}##{}", m_tabs[i].get_directory().filename().string(),
-                    i );
-                if ( ImGui::BeginTabItem( label.c_str(), &isOpen,
-                                          tabItemFlags ) )
-                {
-                    this->update_table_gui();
-                    ImGui::EndTabItem();
-                }
-                if ( ! isOpen && m_idxTab == i && m_tabs.size() > 1 )
-                {
-                    idxTabToRemove = i;
-                }
-            }
-            if ( idxTabToRemove.has_value() )
-            {
-                Trace::Debug( "Remove tab" );
-                this->remove_tab( idxTabToRemove.value() );
-            }
-
-            ImGui::EndTabBar();
-        }
+        ImGui::Text( "Current tab: %u", m_idxTab.value() );
     }
     else
     {
-        ImGui::PopStyleVar( 2 );
+        ImGui::Text( "No tab selected" );
     }
-    ImGui::End();
-    ImGui::PopStyleColor();
 
-    if ( m_showDemoWindow )
-    {
-        ImGui::ShowDemoWindow( &m_showDemoWindow );
-    }
+    ImGui::Text( "Number of tabs : %lu", m_tabs.size() );
 }
 
-FolderNavigator & Explorer::get_current_tab()
+FolderNavigator & TabNavigator::get_current()
 {
     if ( ! m_idxTab.has_value() )
     {
@@ -180,20 +168,16 @@ FolderNavigator & Explorer::get_current_tab()
     return m_tabs[m_idxTab.value()];
 }
 
-void Explorer::add_tab( fs::path const & path )
+void TabNavigator::add( fs::path const & path, bool changeCurrent )
 {
-    // m_tabs.emplace_back( FolderNavigator { path, m_settings } );
-    m_tabs.push_back( FolderNavigator { path, m_settings } );
-    if ( ! m_idxTab.has_value() )
+    m_tabs.push_back( FolderNavigator { path } );
+    if ( ! m_idxTab.has_value() || changeCurrent )
     {
         m_idxTab = m_tabs.size() - 1;
     }
-
-    // m_tabs size
-    Trace::Debug( fmt::format( "m_tabs size: {}", m_tabs.size() ) );
 }
 
-void Explorer::remove_tab( unsigned int idx )
+void TabNavigator::remove( unsigned int idx )
 {
     if ( idx >= m_tabs.size() )
     {
@@ -214,27 +198,79 @@ void Explorer::remove_tab( unsigned int idx )
     Trace::Debug( fmt::format( "idx after rm: {}", m_idxTab.value() ) );
 }
 
+void TabNavigator::set_current( unsigned int idx )
+{
+    if ( idx >= m_tabs.size() )
+    {
+        Trace::Error( "Invalid tab index" );
+        return;
+    }
+
+    m_idxTab = idx;
+}
+
+Explorer::Explorer( Window & window )
+  : m_window { window },
+    m_tabNavigator {},
+    m_showSettings { false },
+    m_showDemoWindow { false }
+{
+    m_tabNavigator.add( ds::get_home_directory(), true );
+}
+
+void Explorer::update()
+{
+    ImGuiWindowFlags fullScreenflags = ImGuiWindowFlags_NoDecoration
+                                       | ImGuiWindowFlags_NoMove
+                                       | ImGuiWindowFlags_NoBringToFrontOnFocus;
+    ImGui::SetNextWindowPos( ImGui::GetMainViewport()->Pos );
+    ImGui::SetNextWindowSize( ImGui::GetMainViewport()->Size );
+    ImGui::PushStyleColor( ImGuiCol_WindowBg,
+                           Settings::get_instance().backgroundColor );
+    ImGui::PushStyleVar( ImGuiStyleVar_WindowRounding, 0.0f );
+    ImGui::PushStyleVar( ImGuiStyleVar_WindowBorderSize, 0.0f );
+    if ( ImGui::Begin( "File Explorer", nullptr, fullScreenflags ) )
+    {
+        ImGui::PopStyleVar( 2 );
+        this->update_header_bar();
+
+        m_tabNavigator.update_gui();
+    }
+    else
+    {
+        ImGui::PopStyleVar( 2 );
+    }
+    ImGui::End();
+    ImGui::PopStyleColor();
+
+    if ( m_showDemoWindow )
+    {
+        ImGui::ShowDemoWindow( &m_showDemoWindow );
+    }
+}
+
 void Explorer::update_header_bar()
 {
     if ( ImGui::Button( "Previous" ) )
     {
-        this->get_current_tab().change_to_previous_dir();
+        m_tabNavigator.get_current().change_to_previous_dir();
     }
     ImGui::SameLine();
     if ( ImGui::Button( "Next" ) )
     {
-        this->get_current_tab().change_to_next_dir();
+        m_tabNavigator.get_current().change_to_next_dir();
     }
     ImGui::SameLine();
     if ( ImGui::Button( "Parent" ) )
     {
         // this->change_directory( m_currentDirectory.parent_path() );
-        this->get_current_tab().to_parent_dir();
+        m_tabNavigator.get_current().to_parent_dir();
     }
     ImGui::SameLine();
     if ( ImGui::Button( "Home" ) )
     {
-        this->get_current_tab().change_directory( ds::get_home_directory() );
+        m_tabNavigator.get_current().change_directory(
+            ds::get_home_directory() );
     }
     ImGui::SameLine();
     this->update_search_box();
@@ -246,7 +282,7 @@ void Explorer::update_header_bar()
     ImGui::SameLine();
     if ( ImGui::Button( "Refresh##RefreshButton" ) )
     {
-        this->get_current_tab().refresh();
+        m_tabNavigator.get_current().refresh();
     }
     this->update_settings();
 }
@@ -254,9 +290,9 @@ void Explorer::update_header_bar()
 void Explorer::update_search_box()
 {
     std::string searchBoxStr {
-        this->get_current_tab().get_search_box().string() };
+        m_tabNavigator.get_current().get_search_box().string() };
     ImGui::InputText( "##Current Directory", &searchBoxStr );
-    this->get_current_tab().set_search_box( searchBoxStr );
+    m_tabNavigator.get_current().set_search_box( searchBoxStr );
 
     bool isInputTextPressed {
         ImGui::IsItemFocused()
@@ -277,13 +313,16 @@ void Explorer::update_search_box()
                  | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_ChildWindow ) )
     {
         for ( auto const & entry : filter_entry(
-                  this->get_current_tab().get_search_box().parent_path(),
-                  this->get_current_tab().get_search_box().filename().string(),
-                  m_settings.showHidden ) )
+                  m_tabNavigator.get_current().get_search_box().parent_path(),
+                  m_tabNavigator.get_current()
+                      .get_search_box()
+                      .filename()
+                      .string(),
+                  Settings::get_instance().showHidden ) )
         {
             if ( ImGui::Selectable( entry.string().c_str() ) )
             {
-                this->get_current_tab().change_directory( entry );
+                m_tabNavigator.get_current().change_directory( entry );
                 ImGui::CloseCurrentPopup();
             }
         }
@@ -296,9 +335,10 @@ void Explorer::update_search_box()
     }
     if ( isInputTextPressed )
     {
-        if ( fs::exists( this->get_current_tab().get_search_box() ) )
+        if ( fs::exists( m_tabNavigator.get_current().get_search_box() ) )
         {
-            this->open_entry( this->get_current_tab().get_search_box() );
+            m_tabNavigator.get_current().open_entry(
+                m_tabNavigator.get_current().get_search_box() );
         }
     }
 }
@@ -331,11 +371,11 @@ void Explorer::update_settings()
         if ( ImGui::BeginTabItem( "Preferences" ) )
         {
             ImGui::Checkbox( "Show Hidden Files/Folder",
-                             &m_settings.showHidden );
+                             &Settings::get_instance().showHidden );
             ImGui::Checkbox( "Show Demo Window", &m_showDemoWindow );
             if ( ImGui::Button( "Reset Preferences" ) )
             {
-                m_settings.reset();
+                Settings::get_instance().reset();
             }
 
             ImGui::EndTabItem();
@@ -350,93 +390,18 @@ void Explorer::update_settings()
             information( m_window );
             ImGui::EndTabItem();
         }
-        if ( ImGui::BeginTabItem( "Explorer Informations" ) )
+        if ( ImGui::BeginTabItem( "Tabs Informations" ) )
         {
-            this->get_current_tab().gui_info();
+            m_tabNavigator.debug_gui();
+            ImGui::EndTabItem();
+        }
+        if ( ImGui::BeginTabItem( "Folder Informations" ) )
+        {
+            m_tabNavigator.get_current().gui_info();
             ImGui::EndTabItem();
         }
         ImGui::EndTabBar();
     }
 
     ImGui::End();
-}
-
-void Explorer::update_table_gui()
-{
-    ImGuiTableFlags flags = ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable
-                            | ImGuiTableFlags_NoBordersInBodyUntilResize;
-
-    ImGui::PushStyleVar( ImGuiStyleVar_CellPadding, ImVec2 { 0.f, 10.f } );
-    if ( ImGui::BeginTable( "Filesystem Item List", 3, flags ) )
-    {
-        ImGui::TableSetupColumn( "Name", ImGuiTableColumnFlags_WidthStretch );
-        ImGui::TableSetupColumn( "Size", ImGuiTableColumnFlags_WidthFixed );
-        ImGui::TableSetupColumn( "Type", ImGuiTableColumnFlags_WidthFixed );
-        ImGui::TableHeadersRow();
-
-        // Trace::Debug( fmt::format( "Table Size: {} {}",
-        //                            m_currentDirectory.string(),
-        //                            m_table.size() ) );
-
-        std::optional< fs::path > selectedEntry { std::nullopt };
-
-        std::size_t idxRow = 0;
-        for ( auto const & row : this->get_current_tab().get_structure() )
-        {
-            // Trace::Debug( fmt::format( "Current row: {}", idxRow ) );
-            ImGui::TableNextRow( ImGuiTableRowFlags_None );
-
-            std::size_t idxColumn = 0;
-            for ( std::string const & cell : row )
-            {
-                if ( idxColumn == 0 )
-                {
-                    ++idxColumn;
-                    continue;
-                }
-
-                ImGui::TableSetColumnIndex( idxColumn - 1 );
-
-                ImGuiSelectableFlags selectable_flags =
-                    ImGuiSelectableFlags_SpanAllColumns;
-                // | ImGuiSelectableFlags_AllowItemOverlap;
-                bool        isSelected { false };
-                std::string id {
-                    fmt::format( "{}##Cell{}-{}", cell, idxColumn, idxRow ) };
-                ImGui::Selectable( id.c_str(), &isSelected, selectable_flags,
-                                   ImVec2 { 0, 50.f } );
-
-                if ( ImGui::IsItemHovered()
-                     && ImGui::IsMouseDoubleClicked( ImGuiMouseButton_Left ) )
-                {
-                    Trace::Debug( "Double Clicked: " + row[0] );
-                    selectedEntry = fs::path { row[0] };
-                    break;
-                }
-                ++idxColumn;
-            }
-            ++idxRow;
-        }
-
-        // Open the selected entry after the loop because we can't modify the
-        // table while iterating over it
-        if ( selectedEntry.has_value() )
-        {
-            this->open_entry( selectedEntry.value() );
-        }
-    }
-    ImGui::PopStyleVar( 1 );
-    ImGui::EndTable();
-}
-
-void Explorer::open_entry( fs::path const & entry )
-{
-    if ( fs::is_directory( entry ) )
-    {
-        this->get_current_tab().change_directory( entry );
-    }
-    else
-    {
-        ds::open( entry );
-    }
 }
